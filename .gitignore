@@ -1,0 +1,37 @@
+# Gradle
+.gradle/
+build/
+bin/
+out/
+
+# Log files
+*.log
+
+# Databases
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDEs and Editors
+.idea/
+*.iml
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+
+# Local uploaded files
+uploads/
+
+# Environment variables
+.env
+
+# Application configurations
+src/main/resources/application.yml
+src/main/resources/application-dev.yml

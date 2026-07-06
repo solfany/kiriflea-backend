@@ -1,0 +1,13 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+aws:
+  s3:
+    bucket: your-bucket-name-dev
+
+nplohs:
+  email:
+    code-expiry-minutes: 10

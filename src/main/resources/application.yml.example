@@ -1,0 +1,100 @@
+spring:
+  profiles:
+    active: dev
+
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/market?characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Seoul}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jackson:
+    time-zone: Asia/Seoul
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: Asia/Seoul
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    clean-disabled: false
+
+  mail:
+    host: smtps.hiworks.com
+    port: 465
+    username: your_email@example.com
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          socketFactory:
+            port: 465
+            class: javax.net.ssl.SSLSocketFactory
+            fallback: false
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 55MB
+
+server:
+  port: ${SERVER_PORT:8080}
+
+jwt:
+  secret: ${JWT_SECRET:change_this_secret_key_very_long_change_this_secret_key_very_long_change_this_secret_key_very_long}
+  access-expiry-ms: 900000      # 15분
+  refresh-expiry-ms: 1209600000 # 14일
+  access-token-validity-in-seconds: 3600
+
+aws:
+  region: ${AWS_REGION:ap-northeast-2}
+  s3:
+    bucket: ${AWS_S3_BUCKET:nplohs-market}
+  access-key: ${AWS_ACCESS_KEY:}
+  secret-key: ${AWS_SECRET_KEY:}
+
+nplohs:
+  email:
+    domain: nplohs.com
+    code-expiry-minutes: 10
+  login:
+    max-fail-count: 5
+    lock-minutes: 15
+
+# 로컬 파일 업로드 (자체 호스팅)
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:./uploads}
+  base-url: ${FILE_BASE_URL:http://localhost:8080}
+
+app:
+  email:
+    allowed-domain: nplohs.com
+  wiki:
+    attachments:
+      upload-dir: ./uploads/attachments
+      max-file-count: 5
+      max-file-size: 20971520
+      max-total-size: 52428800
+      allowed-extensions: pdf,docx,xlsx,pptx,png,jpg,jpeg
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
