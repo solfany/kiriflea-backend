@@ -11,7 +11,7 @@ public class SignUpRequest {
 
     @Email
     @NotBlank
-    @Pattern(regexp = "^[a-zA-Z0-9._%+\\-]+@nplohs\\.com$", message = "@nplohs.com 이메일만 가입 가능합니다.")
+    @Pattern(regexp = "^[a-zA-Z0-9._%+\\-]+@(nplohs\\.com|krtranslink\\.com)$", message = "회사 이메일 계정으로만 가입 가능합니다.")
     private String email;
 
     @NotBlank
