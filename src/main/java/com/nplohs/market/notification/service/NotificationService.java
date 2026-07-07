@@ -38,19 +38,27 @@ public class NotificationService {
 
     @Transactional
     public void markAsRead(Long id, Long userId) {
-        notificationRepository.findById(id).ifPresent(n -> {
-            if (n.getUser().getId().equals(userId)) {
-                n.markAsRead();
-            }
-        });
+        notificationRepository.markAsReadById(id, userId);
     }
 
     @Transactional
     public void markAllAsRead(Long userId) {
-        List<Notification> unreadList = notificationRepository.findByUser_IdOrderByCreatedAtDesc(userId)
-                .stream().filter(n -> !n.isRead()).toList();
-        for (Notification n : unreadList) {
-            n.markAsRead();
-        }
+        notificationRepository.markAllAsReadByUserId(userId);
+    }
+
+    @Transactional
+    public void deleteAll(Long userId) {
+        notificationRepository.deleteAllByUserId(userId);
+    }
+
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 0 * * *")
+    @Transactional
+    public void deleteOldNotifications() {
+        notificationRepository.deleteByCreatedAtBefore(java.time.LocalDateTime.now().minusDays(7));
+    }
+
+    @Transactional
+    public void deleteNotification(Long id, Long userId) {
+        notificationRepository.deleteByIdAndUserId(id, userId);
     }
 }

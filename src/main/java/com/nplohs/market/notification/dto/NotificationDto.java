@@ -1,6 +1,7 @@
 package com.nplohs.market.notification.dto;
 
 import com.nplohs.market.notification.entity.Notification;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
 import java.time.format.DateTimeFormatter;
@@ -11,6 +12,7 @@ public class NotificationDto {
     private String type;
     private String message;
     private String linkUrl;
+    @JsonProperty("isRead")
     private boolean isRead;
     private String createdAt;
 
