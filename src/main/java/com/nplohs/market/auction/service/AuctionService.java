@@ -87,6 +87,12 @@ public class AuctionService {
         bidRepository.save(bid);
 
         auction.updateCurrentPrice(bidAmt, bidder);
+        
+        // 팝콘 타임: 마감 5분 전 입찰 시 5분 자동 연장
+        if (java.time.Duration.between(LocalDateTime.now(), auction.getEndAt()).toMinutes() < 5) {
+            auction.extendEndAt(5);
+        }
+        
         auctionRepository.save(auction);
 
         // 이전 최고 입찰자에게 상위 입찰 알림 발송
@@ -157,10 +163,21 @@ public class AuctionService {
         if (!auction.getProduct().getSeller().getEmail().equals(userEmail)) {
             throw new IllegalArgumentException("판매자만 경매를 다시 시작할 수 있습니다.");
         }
+        // 최고 입찰자가 있는 상태에서 재오픈 시, 최고 입찰 내역만 삭제하고 차순위로 롤백
+        Bid topBid = bidRepository.findFirstByAuction_IdOrderByAmountDesc(auction.getId()).orElse(null);
+        if (topBid != null) {
+            bidRepository.delete(topBid);
+            bidRepository.flush(); // 바로 반영
+            
+            Bid secondBid = bidRepository.findFirstByAuction_IdOrderByAmountDesc(auction.getId()).orElse(null);
+            BigDecimal newCurrentPrice = secondBid != null ? secondBid.getAmount() : auction.getStartPrice();
+            int newBidCount = Math.max(0, auction.getBidCount() - 1);
+            
+            auction.rollbackToNextBid(newCurrentPrice, newBidCount, newEndAt);
+        } else {
+            auction.reopen(newEndAt);
+        }
         
-        bidRepository.deleteAllByAuctionId(auction.getId());
-        
-        auction.reopen(newEndAt);
         auction.getProduct().changeStatus(com.nplohs.market.product.entity.ProductStatus.SALE);
         
         // 경매 재오픈 알림
@@ -169,7 +186,7 @@ public class AuctionService {
             .status("ACTIVE")
             .currentBid(auction.getCurrentPrice().longValue())
             .bidCount(auction.getBidCount())
-            .message("경매가 다시 시작되었습니다.")
+            .message("경매가 재개되었습니다.")
             .build();
         messagingTemplate.convertAndSend("/topic/product/" + productId + "/auction", msg);
     }
@@ -237,6 +254,70 @@ public class AuctionService {
             "축하합니다! '" + auction.getProduct().getTitle() + "' 경매에 최종 낙찰되었습니다.",
             "/products/" + productId
         );
+    }
+
+    @Transactional
+    public void cancelEarlyClose(Long productId, String userEmail) {
+        Auction auction = getByProductId(productId);
+        if (!auction.getProduct().getSeller().getEmail().equals(userEmail)) {
+            throw new IllegalArgumentException("판매자만 조기 낙찰을 취소할 수 있습니다.");
+        }
+        if (auction.getStatus() != AuctionStatus.CLOSED) {
+            throw new IllegalArgumentException("조기 낙찰된 경매만 취소할 수 있습니다.");
+        }
+        
+        if (auction.getEndAt().isBefore(java.time.LocalDateTime.now())) {
+            auction.extendTime(java.time.LocalDateTime.now().plusHours(24));
+        }
+        
+        auction.setStatus(AuctionStatus.ACTIVE);
+        auction.getProduct().changeStatus(com.nplohs.market.product.entity.ProductStatus.SALE);
+
+        AuctionDto.AuctionUpdateMessage msg = AuctionDto.AuctionUpdateMessage.builder()
+            .productId(productId)
+            .status("ACTIVE")
+            .currentBid(auction.getCurrentPrice().longValue())
+            .bidCount(auction.getBidCount())
+            .message("조기 낙찰이 취소되어 경매가 다시 진행됩니다.")
+            .build();
+        messagingTemplate.convertAndSend("/topic/product/" + productId + "/auction", msg);
+    }
+
+    @Transactional
+    public void cancelTopBid(Long productId, String userEmail) {
+        Auction auction = getByProductId(productId);
+        if (!auction.getProduct().getSeller().getEmail().equals(userEmail)) {
+            throw new IllegalArgumentException("판매자만 최고 입찰을 취소할 수 있습니다.");
+        }
+        
+        Bid topBid = bidRepository.findFirstByAuction_IdOrderByAmountDesc(auction.getId()).orElse(null);
+        if (topBid == null) {
+            throw new IllegalArgumentException("취소할 입찰 내역이 없습니다.");
+        }
+        
+        // 최고 입찰 삭제
+        bidRepository.delete(topBid);
+        bidRepository.flush();
+        
+        // 차순위 입찰 확인
+        Bid secondBid = bidRepository.findFirstByAuction_IdOrderByAmountDesc(auction.getId()).orElse(null);
+        BigDecimal newCurrentPrice = secondBid != null ? secondBid.getAmount() : auction.getStartPrice();
+        int newBidCount = Math.max(0, auction.getBidCount() - 1);
+        
+        // 롤백 (시간은 연장하지 않음, 필요시 판매자가 직접 연장)
+        // 만약 경매가 닫혔다면, 다시 ACTIVE 로 변경하여 차순위 입찰자 혹은 새로운 입찰을 받도록 함
+        auction.rollbackToNextBid(newCurrentPrice, newBidCount, auction.getEndAt());
+        auction.getProduct().changeStatus(ProductStatus.SALE); // 다시 판매 상태로 변경
+        
+        AuctionDto.AuctionUpdateMessage msg = AuctionDto.AuctionUpdateMessage.builder()
+            .productId(productId)
+            .status("ACTIVE")
+            .currentBid(auction.getCurrentPrice().longValue())
+            .bidCount(auction.getBidCount())
+            .lastBidderNickname(secondBid != null ? secondBid.getBidder().getNickname() : "")
+            .message("최고 입찰이 취소되어 차순위 입찰가로 변경되었습니다.")
+            .build();
+        messagingTemplate.convertAndSend("/topic/product/" + productId + "/auction", msg);
     }
 
     // ── 만료 경매 자동 마감 (@Scheduled 60초마다) ─────────────────

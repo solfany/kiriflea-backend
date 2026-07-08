@@ -39,6 +39,9 @@ public class Review {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean isHidden = false;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -50,5 +53,9 @@ public class Review {
         this.reviewee = reviewee;
         this.score = score;
         this.comment = comment;
+    }
+
+    public void setHidden(boolean hidden) {
+        this.isHidden = hidden;
     }
 }

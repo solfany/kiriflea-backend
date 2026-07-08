@@ -37,6 +37,20 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok("이메일 인증이 완료되었습니다."));
     }
 
+    /** POST /api/auth/password/send-code — 비밀번호 재설정용 인증코드 발송 */
+    @PostMapping("/password/send-code")
+    public ResponseEntity<ApiResponse<Void>> sendPasswordResetCode(@RequestBody @Valid EmailCodeRequest request) {
+        emailService.sendPasswordResetCode(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.ok("인증코드가 발송되었습니다."));
+    }
+
+    /** POST /api/auth/password/reset — 비밀번호 재설정 */
+    @PostMapping("/password/reset")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody @Valid PasswordResetRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.ok("비밀번호가 성공적으로 변경되었습니다."));
+    }
+
     /** GET /api/auth/nickname/random — 랜덤 닉네임 생성 */
     @GetMapping("/nickname/random")
     public ResponseEntity<ApiResponse<Map<String, String>>> randomNickname() {

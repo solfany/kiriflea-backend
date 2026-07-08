@@ -63,6 +63,23 @@ public class AuthService {
         return buildTokens(user);
     }
 
+    // ── 비밀번호 재설정 ──────────────────────────────────────────
+    @Transactional
+    public void resetPassword(PasswordResetRequest request) {
+        String email = request.getEmail().toLowerCase();
+
+        if (!emailService.isEmailVerified(email)) {
+            throw new IllegalStateException("이메일 인증을 먼저 완료해주세요.");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        user.changePassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        emailService.clearEmailVerified(email);
+    }
+
     // ── 로그인 ────────────────────────────────────────────────────
     @Transactional
     public TokenResponse login(LoginRequest request) {

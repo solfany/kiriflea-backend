@@ -6,6 +6,7 @@ import com.nplohs.market.common.response.ApiResponse;
 import com.nplohs.market.product.entity.Product;
 import com.nplohs.market.product.repository.ProductRepository;
 import com.nplohs.market.user.dto.UserResponse;
+import com.nplohs.market.trade.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,7 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final ReviewRepository reviewRepository;
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<UserResponse>> getUserInfo(@PathVariable Long id) {
@@ -58,5 +60,38 @@ public class UserController {
         }).collect(Collectors.toList());
         
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/{id}/reviews")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getUserReviews(@PathVariable Long id) {
+        DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        List<Map<String, Object>> items = reviewRepository
+                .findByReviewee_IdAndIsHiddenFalseOrderByCreatedAtDesc(id).stream()
+                .map(r -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", r.getId());
+                    m.put("score", r.getScore());
+                    m.put("comment", r.getComment());
+                    m.put("createdAt", r.getCreatedAt() != null ? r.getCreatedAt().format(FMT) : null);
+                    
+                    Map<String, Object> reviewer = new HashMap<>();
+                    reviewer.put("id", r.getReviewer().getId());
+                    reviewer.put("nickname", r.getReviewer().getNickname());
+                    reviewer.put("profileImage", r.getReviewer().getProfileImage());
+                    
+                    boolean isBuyer = r.getReviewer().getId().equals(r.getTrade().getBuyer().getId());
+                    reviewer.put("role", isBuyer ? "구매자" : "판매자");
+                    m.put("reviewer", reviewer);
+                    
+                    Map<String, Object> product = new HashMap<>();
+                    product.put("id", r.getTrade().getProduct().getId());
+                    product.put("title", r.getTrade().getProduct().getTitle());
+                    m.put("product", product);
+                    
+                    return m;
+                })
+                .toList();
+
+        return ResponseEntity.ok(ApiResponse.ok(items));
     }
 }

@@ -37,6 +37,7 @@ public class ProductResponse {
     private final Integer      bidCount;
     private final String       buyerNickname;
     private final Long         buyerId;
+    private final String       auctionStatus;
     private final boolean      hasTrade;
 
     public ProductResponse(Product p) {
@@ -79,12 +80,14 @@ public class ProductResponse {
             this.bidCount     = auction.getBidCount();
             this.buyerNickname = auction.getWinner() != null ? auction.getWinner().getNickname() : null;
             this.buyerId       = auction.getWinner() != null ? auction.getWinner().getId() : null;
+            this.auctionStatus = auction.getStatus().name();
         } else {
             this.currentBid   = null;
             this.auctionEndAt = null;
             this.bidCount     = null;
             this.buyerNickname = null;
             this.buyerId       = null;
+            this.auctionStatus = null;
         }
         this.hasTrade = hasTrade;
     }

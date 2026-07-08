@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     Optional<Review> findByTrade_IdAndReviewer_Id(Long tradeId, Long reviewerId);
-    List<Review> findByReviewee_IdOrderByCreatedAtDesc(Long revieweeId);
+    List<Review> findByReviewee_IdAndIsHiddenFalseOrderByCreatedAtDesc(Long revieweeId);
 }

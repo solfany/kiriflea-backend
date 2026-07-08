@@ -101,7 +101,7 @@ public class TradeService {
     public List<TradeDto.ReviewResponse> getMyReviews(String email) {
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        return reviewRepository.findByReviewee_IdOrderByCreatedAtDesc(user.getId())
+        return reviewRepository.findByReviewee_IdAndIsHiddenFalseOrderByCreatedAtDesc(user.getId())
             .stream().map(TradeDto.ReviewResponse::from).toList();
     }
 
@@ -115,3 +115,4 @@ public class TradeService {
             .orElse(null);
     }
 }
+

@@ -63,6 +63,10 @@ public class Auction {
         this.endAt           = endAt;
     }
 
+    public void extendEndAt(long minutes) {
+        this.endAt = this.endAt.plusMinutes(minutes);
+    }
+
     public void updateCurrentPrice(BigDecimal newPrice, User bidder) {
         this.currentPrice = newPrice;
         this.bidCount++;
@@ -91,5 +95,13 @@ public class Auction {
         this.endAt = newEndAt;
         this.currentPrice = this.startPrice;
         this.bidCount = 0;
+    }
+
+    public void rollbackToNextBid(BigDecimal nextPrice, int newBidCount, LocalDateTime newEndAt) {
+        this.status = AuctionStatus.ACTIVE;
+        this.winner = null;
+        this.endAt = newEndAt;
+        this.currentPrice = nextPrice;
+        this.bidCount = newBidCount;
     }
 }

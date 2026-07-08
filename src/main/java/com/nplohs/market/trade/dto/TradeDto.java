@@ -4,16 +4,25 @@ import com.nplohs.market.trade.entity.Review;
 import com.nplohs.market.trade.entity.Trade;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 public class TradeDto {
 
     @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class CreateTradeRequest {
         private Long productId;
         private Long buyerId;
     }
 
     @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class CreateReviewRequest {
         private int score;
         private String comment;

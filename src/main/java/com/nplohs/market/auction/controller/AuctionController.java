@@ -82,6 +82,16 @@ public class AuctionController {
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
+    // 조기 낙찰 취소 (판매자)
+    @PostMapping("/api/products/{productId}/auctions/cancel-early-close")
+    public ResponseEntity<ApiResponse<Void>> cancelEarlyClose(
+        @PathVariable Long productId,
+        @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        auctionService.cancelEarlyClose(productId, userDetails.getUsername());
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
     // 경매 재오픈 (판매자)
     @PostMapping("/api/products/{productId}/auctions/reopen")
     public ResponseEntity<ApiResponse<Void>> reopen(
@@ -103,6 +113,16 @@ public class AuctionController {
     ) {
         java.time.LocalDateTime newEndAt = java.time.LocalDateTime.parse(body.get("endAt"));
         auctionService.extendTime(productId, userDetails.getUsername(), newEndAt);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    // 최고 입찰 취소 (판매자)
+    @DeleteMapping("/api/products/{productId}/auctions/top-bid")
+    public ResponseEntity<ApiResponse<Void>> cancelTopBid(
+        @PathVariable Long productId,
+        @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        auctionService.cancelTopBid(productId, userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

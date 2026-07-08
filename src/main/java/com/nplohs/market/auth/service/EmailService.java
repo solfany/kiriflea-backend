@@ -49,10 +49,32 @@ public class EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromAddress);
         message.setTo(email);
-        message.setSubject("[nplohs 마켓] 이메일 인증 코드");
+        message.setSubject("[끼리플리 마켓] 이메일 인증 코드");
         message.setText(String.format("인증 코드: %s%n%n유효 시간: %d분", code, expiryMinutes));
         mailSender.send(message);
         log.info("Verification code sent to {}: {}", email, code);
+    }
+
+    @Transactional
+    public void sendPasswordResetCode(String email) {
+        String lowerEmail = email.toLowerCase();
+        
+        if (!userRepository.existsByEmail(lowerEmail)) {
+            throw new IllegalStateException("가입되지 않은 이메일입니다.");
+        }
+
+        codeRepository.deleteByEmail(lowerEmail);
+
+        String code = String.format("%06d", RANDOM.nextInt(1_000_000));
+        codeRepository.save(new EmailVerificationCode(lowerEmail, code, expiryMinutes));
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);
+        message.setTo(email);
+        message.setSubject("[끼리플리 마켓] 비밀번호 재설정 인증 코드");
+        message.setText(String.format("비밀번호 재설정 인증 코드: %s%n%n유효 시간: %d분", code, expiryMinutes));
+        mailSender.send(message);
+        log.info("Password reset code sent to {}: {}", email, code);
     }
 
     @Transactional

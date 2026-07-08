@@ -16,7 +16,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Cursor-based pagination with keyword/price/sort support
     @Query("""
         SELECT p FROM Product p
+        LEFT JOIN Auction a ON a.product = p
         WHERE p.isDeleted = false AND p.isHidden = false
+          AND (a IS NULL OR a.status != com.nplohs.market.auction.entity.AuctionStatus.CANCELLED)
           AND (:category IS NULL OR p.category = :category)
           AND (:status IS NULL AND p.status != com.nplohs.market.product.entity.ProductStatus.SOLD OR p.status = :status)
           AND (:keyword IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
@@ -42,7 +44,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("""
         SELECT p FROM Product p
+        LEFT JOIN Auction a ON a.product = p
         WHERE p.isDeleted = false AND p.isHidden = false
+          AND (a IS NULL OR a.status != com.nplohs.market.auction.entity.AuctionStatus.CANCELLED)
           AND (:category IS NULL OR p.category = :category)
           AND (:status IS NULL AND p.status != com.nplohs.market.product.entity.ProductStatus.SOLD OR p.status = :status)
           AND (:keyword IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
@@ -62,7 +66,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // 급상승 Top 10 (24시간 내, viewCount + wishCount*2 가중 합산)
     @Query("""
         SELECT p FROM Product p
+        LEFT JOIN Auction a ON a.product = p
         WHERE p.isDeleted = false AND p.isHidden = false AND p.status != com.nplohs.market.product.entity.ProductStatus.SOLD
+          AND (a IS NULL OR a.status != com.nplohs.market.auction.entity.AuctionStatus.CANCELLED)
           AND (p.createdAt >= :since OR p.updatedAt >= :since)
         ORDER BY (p.viewCount + p.wishCount * 2) DESC
         """)

@@ -28,10 +28,11 @@ public class ChatRoomResponse {
                 "title",        room.getProduct().getTitle(),
                 "thumbnailUrl", thumb,
                 "isSeller",     isSeller,
-                "price",        room.getProduct().getPrice(),
+                "price",        room.getProduct().getPrice() != null ? room.getProduct().getPrice() : 0,
                 "status",       room.getProduct().getStatus().name(),
                 "isDeleted",    room.getProduct().isDeleted(),
-                "hasTrade",     hasTrade
+                "hasTrade",     hasTrade,
+                "isAuction",    room.getProduct().getType().name().equals("AUCTION")
         );
 
         Map<String, Object> partnerMap = new java.util.HashMap<>();
