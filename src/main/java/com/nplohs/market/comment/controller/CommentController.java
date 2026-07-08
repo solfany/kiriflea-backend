@@ -43,4 +43,14 @@ public class CommentController {
         commentService.delete(commentId, user.getUsername());
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
+
+    /** PATCH /api/products/{productId}/comments/{commentId} */
+    @PatchMapping("/api/products/{productId}/comments/{commentId}")
+    public ResponseEntity<ApiResponse<CommentService.CommentResponse>> edit(
+            @PathVariable Long productId,
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal UserDetails user,
+            @RequestBody CommentService.EditRequest req) {
+        return ResponseEntity.ok(ApiResponse.ok(commentService.edit(commentId, user.getUsername(), req)));
+    }
 }

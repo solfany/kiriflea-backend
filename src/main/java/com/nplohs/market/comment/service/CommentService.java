@@ -69,6 +69,27 @@ public class CommentService {
         commentRepository.delete(comment);
     }
 
+    @Transactional
+    public CommentResponse edit(Long commentId, String requesterEmail, EditRequest req) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
+        
+        boolean isAuthor = comment.getAuthor().getEmail().equals(requesterEmail);
+        if (!isAuthor) {
+            throw new SecurityException("수정 권한이 없습니다");
+        }
+
+        if (req.content() != null && !req.content().isBlank()) {
+            comment.setContent(req.content());
+        }
+        if (req.isPrivate() != null) {
+            comment.setSecret(req.isPrivate());
+        }
+
+        User author = userRepository.findByEmail(requesterEmail).orElseThrow();
+        return toResponse(comment, author);
+    }
+
     private CommentResponse toResponse(Comment c, User viewer) {
         boolean canSee = !c.isSecret()
                 || (viewer != null && (c.getAuthor().getId().equals(viewer.getId())
@@ -97,6 +118,8 @@ public class CommentService {
     }
 
     public record CreateRequest(String content, Boolean isPrivate, Long parentId) {}
+
+    public record EditRequest(String content, Boolean isPrivate) {}
 
     public record CommentResponse(
             Long id,
