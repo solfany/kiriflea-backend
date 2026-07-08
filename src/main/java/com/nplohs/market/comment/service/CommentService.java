@@ -79,12 +79,8 @@ public class CommentService {
             throw new SecurityException("수정 권한이 없습니다");
         }
 
-        if (req.content() != null && !req.content().isBlank()) {
-            comment.setContent(req.content());
-        }
-        if (req.isPrivate() != null) {
-            comment.setSecret(req.isPrivate());
-        }
+        boolean secret = req.isPrivate() != null ? req.isPrivate() : comment.isSecret();
+        comment.update(req.content() != null ? req.content() : comment.getContent(), secret);
 
         User author = userRepository.findByEmail(requesterEmail).orElseThrow();
         return toResponse(comment, author);

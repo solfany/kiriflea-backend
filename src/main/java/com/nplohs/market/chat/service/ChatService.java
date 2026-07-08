@@ -145,9 +145,7 @@ public class ChatService {
     @Transactional
     public void markRead(String userEmail, Long roomId) {
         User user = findUser(userEmail);
-        chatMessageRepository.findByRoom_IdOrderByCreatedAtAsc(roomId).stream()
-                .filter(m -> !m.getSender().getId().equals(user.getId()) && m.getReadAt() == null)
-                .forEach(ChatMessage::markRead);
+        chatMessageRepository.markReadByRoomIdAndUserId(roomId, user.getId());
     }
 
     @Transactional(readOnly = true)

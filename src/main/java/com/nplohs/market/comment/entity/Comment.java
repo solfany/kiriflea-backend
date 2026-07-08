@@ -58,4 +58,9 @@ public class Comment {
         this.secret   = secret;
         this.parent   = parent;
     }
+
+    public void update(String content, boolean secret) {
+        this.content = content;
+        this.secret = secret;
+    }
 }
