@@ -25,9 +25,19 @@ public class NotificationService {
         messagingTemplate.convertAndSend("/topic/user/" + user.getId() + "/notifications", new NotificationDto(n));
     }
 
+    @Transactional
+    public void deleteLikeNotification(Long sellerId, String linkUrl, String nickname) {
+        notificationRepository.deleteLikeNotification(sellerId, NotificationType.LIKE, linkUrl, nickname);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsLikeNotification(Long sellerId, String linkUrl, String nickname) {
+        return notificationRepository.existsLikeNotification(sellerId, NotificationType.LIKE, linkUrl, nickname);
+    }
+
     @Transactional(readOnly = true)
     public List<NotificationDto> getNotifications(Long userId) {
-        return notificationRepository.findByUser_IdOrderByCreatedAtDesc(userId)
+        return notificationRepository.findByUser_IdOrderByIdDesc(userId)
                 .stream().map(NotificationDto::new).toList();
     }
 

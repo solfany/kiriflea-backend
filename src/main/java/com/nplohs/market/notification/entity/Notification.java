@@ -30,9 +30,13 @@ public class Notification {
     private String linkUrl;
     private boolean isRead;
 
-    @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 
     public Notification(User user, NotificationType type, String message, String linkUrl) {
         this.user = user;

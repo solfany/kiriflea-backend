@@ -36,20 +36,37 @@ public class WishlistService {
             wishlistRepository.deleteByUser_IdAndProduct_Id(user.getId(), productId);
             product.decrementWishCount();
             productRepository.save(product);
+
+            // 찜 취소 시 기존 알림 제거 (자신이 자신의 상품을 찜한 경우는 알림이 없으므로 제외)
+            if (!product.getSeller().getId().equals(user.getId())) {
+                notificationService.deleteLikeNotification(
+                    product.getSeller().getId(),
+                    "/products/" + product.getId(),
+                    user.getNickname()
+                );
+            }
+
             return Map.of("wished", false, "count", product.getWishCount());
         } else {
             wishlistRepository.save(new Wishlist(user, product));
             product.incrementWishCount();
             productRepository.save(product);
 
-            // 알림 발송 (자신이 자신의 상품을 찜한 경우는 제외)
+            // 알림 발송 (자신이 자신의 상품을 찜한 경우는 제외, 중복 알림 방지)
             if (!product.getSeller().getId().equals(user.getId())) {
-                notificationService.createNotification(
-                    product.getSeller(),
-                    com.nplohs.market.notification.entity.NotificationType.LIKE,
-                    user.getNickname() + "님이 '" + product.getTitle() + "' 상품을 찜했습니다.",
-                    "/products/" + product.getId()
+                boolean alreadyNotified = notificationService.existsLikeNotification(
+                    product.getSeller().getId(),
+                    "/products/" + product.getId(),
+                    user.getNickname()
                 );
+                if (!alreadyNotified) {
+                    notificationService.createNotification(
+                        product.getSeller(),
+                        com.nplohs.market.notification.entity.NotificationType.LIKE,
+                        user.getNickname() + "님이 '" + product.getTitle() + "' 상품을 찜했습니다.",
+                        "/products/" + product.getId()
+                    );
+                }
             }
 
             return Map.of("wished", true, "count", product.getWishCount());
