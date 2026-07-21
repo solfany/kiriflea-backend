@@ -44,6 +44,13 @@ public class TradeService {
             throw new IllegalArgumentException("이미 판매 완료된 상품입니다.");
         }
 
+        // 경매 상품은 낙찰자만 거래 상대가 될 수 있으므로, 이 일반 거래 완료 API로
+        // 임의의 buyerId를 넣어 낙찰 절차를 우회하지 못하도록 막는다.
+        // (경매 거래 완료는 AuctionService.completeTrade가 winner 검증까지 포함해 처리한다)
+        if (product.getType() == com.nplohs.market.product.entity.ProductType.AUCTION) {
+            throw new IllegalArgumentException("경매 상품은 낙찰 절차를 통해서만 거래를 완료할 수 있습니다.");
+        }
+
         User buyer = userRepository.findById(request.getBuyerId())
             .orElseThrow(() -> new IllegalArgumentException("Buyer not found"));
 
@@ -100,7 +107,7 @@ public class TradeService {
 
     public List<TradeDto.ReviewResponse> getMyReviews(String email) {
         User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+           .orElseThrow(() -> new IllegalArgumentException("User not found"));
         return reviewRepository.findByReviewee_IdAndIsHiddenFalseOrderByCreatedAtDesc(user.getId())
             .stream().map(TradeDto.ReviewResponse::from).toList();
     }

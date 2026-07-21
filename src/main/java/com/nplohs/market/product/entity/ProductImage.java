@@ -13,16 +13,22 @@ public class ProductImage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @org.hibernate.annotations.Comment("고유 ID")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
+    @org.hibernate.annotations.Comment("상품")
     private Product product;
 
     @Column(nullable = false)
+    @org.hibernate.annotations.Comment("이미지 URL")
+
     private String imageUrl;
 
     @Column(nullable = false)
+    @org.hibernate.annotations.Comment("정렬 순서")
+
     private int orderIndex;
 
     public ProductImage(Product product, String imageUrl, int orderIndex) {

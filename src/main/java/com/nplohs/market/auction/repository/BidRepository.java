@@ -13,6 +13,8 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.data.jpa.repository.Query("DELETE FROM Bid b WHERE b.auction.id = :auctionId")
     void deleteAllByAuctionId(@org.springframework.data.repository.query.Param("auctionId") Long auctionId);
+    
+    boolean existsByBidder_Id(Long bidderId);
     Page<Bid> findByAuction_IdOrderByCreatedAtDesc(Long auctionId, Pageable pageable);
     Optional<Bid> findFirstByAuction_IdOrderByAmountDesc(Long auctionId);
     Page<Bid> findByBidder_Id(Long bidderId, Pageable pageable);

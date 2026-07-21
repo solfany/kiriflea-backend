@@ -27,6 +27,9 @@ public class AuthService {
     @Value("${nplohs.login.lock-minutes:15}")
     private int lockMinutes;
 
+    @Value("${nplohs.login.max-fail-count:5}")
+    private int maxFailCount;
+
     @Value("${jwt.refresh-expiry-ms}")
     private long refreshExpiryMs;
 
@@ -40,8 +43,13 @@ public class AuthService {
         if (!emailService.isEmailVerified(email))
             throw new IllegalStateException("이메일 인증을 먼저 완료해주세요.");
 
-        if (userRepository.existsByEmail(email))
+        java.util.Optional<User> existing = userRepository.findByEmail(email);
+        if (existing.isPresent()) {
+            if (!existing.get().isActive()) {
+                throw new IllegalStateException("탈퇴한 회원입니다. 24시간 뒤에 회원가입 가능합니다.");
+            }
             throw new IllegalStateException("이미 사용 중인 이메일입니다.");
+        }
         if (userRepository.existsByNickname(request.getNickname()))
             throw new IllegalStateException("이미 사용 중인 닉네임입니다.");
 
@@ -87,11 +95,15 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다."));
 
+        if (!user.isActive()) {
+            throw new IllegalStateException("탈퇴한 회원입니다. 24시간 뒤에 회원가입 가능합니다.");
+        }
+
         if (user.isLocked())
             throw new IllegalStateException("로그인 시도 횟수 초과. 잠시 후 다시 시도하세요.");
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            user.recordLoginFail(lockMinutes);
+            user.recordLoginFail(maxFailCount, lockMinutes);
             userRepository.save(user);
             throw new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다.");
         }

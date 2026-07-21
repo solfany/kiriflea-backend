@@ -78,4 +78,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findBySeller_IdOrderByCreatedAtDesc(@Param("sellerId") Long sellerId);
 
     int countBySeller_Id(Long sellerId);
+    
+    boolean existsBySeller_Id(Long sellerId);
 }

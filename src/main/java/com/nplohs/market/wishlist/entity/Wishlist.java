@@ -18,17 +18,22 @@ public class Wishlist {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @org.hibernate.annotations.Comment("고유 ID")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @org.hibernate.annotations.Comment("사용자")
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
+    @org.hibernate.annotations.Comment("상품")
     private Product product;
 
     @Column(nullable = false, updatable = false)
+    @org.hibernate.annotations.Comment("생성 일시")
+
     private LocalDateTime createdAt;
 
     @PrePersist

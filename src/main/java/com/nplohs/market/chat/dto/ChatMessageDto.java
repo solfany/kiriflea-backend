@@ -10,6 +10,7 @@ import java.util.Map;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+
 public class ChatMessageDto {
     private Long   id;
     private Long   roomId;

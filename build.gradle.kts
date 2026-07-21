@@ -28,6 +28,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
+    // Dotenv (.env 자동 로드)
+    implementation("me.paulschwarz:spring-dotenv:4.0.0")
+
     // Security
     implementation("org.springframework.boot:spring-boot-starter-security")
 

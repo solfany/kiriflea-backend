@@ -4,13 +4,17 @@ import com.nplohs.market.auth.entity.User;
 import com.nplohs.market.auth.repository.UserRepository;
 import com.nplohs.market.comment.entity.Comment;
 import com.nplohs.market.comment.repository.CommentRepository;
+import com.nplohs.market.common.ratelimit.RateLimiter;
 import com.nplohs.market.product.entity.Product;
 import com.nplohs.market.product.repository.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +25,10 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final UserRepository    userRepository;
+    private final RateLimiter       rateLimiter;
+
+    private static final int    COMMENT_MAX_PER_WINDOW = 10;
+    private static final Duration COMMENT_WINDOW = Duration.ofMinutes(1);
     private final ProductRepository productRepository;
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
@@ -38,6 +46,10 @@ public class CommentService {
 
     @Transactional
     public CommentResponse create(Long productId, String authorEmail, CreateRequest req) {
+        if (!rateLimiter.tryAcquire("comment:create:" + authorEmail, COMMENT_MAX_PER_WINDOW, COMMENT_WINDOW)) {
+            throw new IllegalStateException("댓글을 너무 빠르게 작성하고 있습니다. 잠시 후 다시 시도해주세요.");
+        }
+
         User    author  = userRepository.findByEmail(authorEmail)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         Product product = productRepository.findById(productId)
@@ -79,6 +91,10 @@ public class CommentService {
             throw new SecurityException("수정 권한이 없습니다");
         }
 
+        if (req.content() != null && req.content().isBlank()) {
+            throw new IllegalArgumentException("댓글 내용을 입력해주세요.");
+        }
+
         boolean secret = req.isPrivate() != null ? req.isPrivate() : comment.isSecret();
         comment.update(req.content() != null ? req.content() : comment.getContent(), secret);
 
@@ -113,9 +129,17 @@ public class CommentService {
         );
     }
 
-    public record CreateRequest(String content, Boolean isPrivate, Long parentId) {}
+    public record CreateRequest(
+            @NotBlank(message = "댓글 내용을 입력해주세요.") @Size(max = 1000, message = "댓글은 1000자 이하로 작성해주세요.") String content,
+            Boolean isPrivate,
+            Long parentId
+    ) {}
 
-    public record EditRequest(String content, Boolean isPrivate) {}
+    // content가 null이면 기존 내용을 유지(비공개 여부만 변경)하는 부분 수정이 허용되므로 @NotBlank는 걸지 않는다.
+    public record EditRequest(
+            @Size(max = 1000, message = "댓글은 1000자 이하로 작성해주세요.") String content,
+            Boolean isPrivate
+    ) {}
 
     public record CommentResponse(
             Long id,

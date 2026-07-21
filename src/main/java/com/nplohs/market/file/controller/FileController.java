@@ -1,9 +1,13 @@
 package com.nplohs.market.file.controller;
 
+import com.nplohs.market.auth.repository.UserRepository;
 import com.nplohs.market.common.response.ApiResponse;
 import com.nplohs.market.file.service.FileService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,6 +19,7 @@ import java.util.Map;
 public class FileController {
 
     private final FileService fileService;
+    private final UserRepository userRepository;
 
     /**
      * POST /api/images/upload  (프론트 호출 경로)
@@ -37,8 +42,13 @@ public class FileController {
      * DELETE /api/upload?key=products/xxx.jpg
      */
     @DeleteMapping("/api/upload")
-    public ResponseEntity<ApiResponse<Void>> delete(@RequestParam String key) {
-        fileService.delete(key);
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @RequestParam String key,
+            @AuthenticationPrincipal UserDetails user) {
+        Long requesterId = userRepository.findByEmail(user.getUsername())
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + user.getUsername()))
+                .getId();
+        fileService.delete(key, requesterId);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

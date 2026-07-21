@@ -21,10 +21,12 @@ public class Bid {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @org.hibernate.annotations.Comment("고유 ID")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "auction_id", nullable = false)
+    @org.hibernate.annotations.Comment("경매")
     private Auction auction;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -35,6 +37,8 @@ public class Bid {
     private BigDecimal amount;
 
     @Column(nullable = false, updatable = false)
+    @org.hibernate.annotations.Comment("생성 일시")
+
     private LocalDateTime createdAt;
 
     @PrePersist

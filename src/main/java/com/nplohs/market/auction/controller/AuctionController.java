@@ -2,6 +2,7 @@ package com.nplohs.market.auction.controller;
 
 import com.nplohs.market.auction.dto.AuctionDto;
 import com.nplohs.market.auction.service.AuctionService;
+import com.nplohs.market.common.ratelimit.RateLimiter;
 import com.nplohs.market.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +19,10 @@ import java.util.Map;
 public class AuctionController {
 
     private final AuctionService auctionService;
+    private final RateLimiter    rateLimiter;
+
+    private static final int    BID_MAX_PER_WINDOW = 5;
+    private static final Duration BID_WINDOW = Duration.ofSeconds(10);
 
     // 상품별 입찰 목록 조회
     @GetMapping("/api/products/{productId}/bids")
@@ -41,6 +47,13 @@ public class AuctionController {
                 ResponseEntity.badRequest().body(ApiResponse.error("amount는 0보다 커야 합니다."));
             return err;
         }
+        if (!rateLimiter.tryAcquire("bid:" + userDetails.getUsername() + ":" + productId, BID_MAX_PER_WINDOW, BID_WINDOW)) {
+            @SuppressWarnings("unchecked")
+            ResponseEntity<ApiResponse<AuctionDto.BidResponse>> err =
+                (ResponseEntity<ApiResponse<AuctionDto.BidResponse>>)(ResponseEntity<?>)
+                ResponseEntity.status(429).body(ApiResponse.error("입찰이 너무 빠릅니다. 잠시 후 다시 시도해주세요."));
+            return err;
+        }
         AuctionDto.BidResponse bid = auctionService.placeBid(
             productId, userDetails.getUsername(), amount);
         return ResponseEntity.ok(ApiResponse.ok(bid));
@@ -53,12 +66,22 @@ public class AuctionController {
             @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "20") int size
     ) {
-        java.util.List<AuctionDto.MyBidResponse> items =
-            auctionService.myBids(userDetails.getUsername(), 0, size);
+        int pageNumber = 0;
+        if (cursor != null) {
+            try {
+                pageNumber = Integer.parseInt(cursor);
+            } catch (NumberFormatException ignored) {
+                // 잘못된 cursor면 첫 페이지부터
+            }
+        }
+
+        org.springframework.data.domain.Page<AuctionDto.MyBidResponse> result =
+            auctionService.myBids(userDetails.getUsername(), pageNumber, size);
+
         java.util.Map<String, Object> page = new java.util.HashMap<>();
-        page.put("items",      items);
-        page.put("nextCursor", null);
-        page.put("hasMore",    false);
+        page.put("items",      result.getContent());
+        page.put("nextCursor", result.hasNext() ? String.valueOf(pageNumber + 1) : null);
+        page.put("hasMore",    result.hasNext());
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 

@@ -2,6 +2,9 @@ package com.nplohs.market.trade.dto;
 
 import com.nplohs.market.trade.entity.Review;
 import com.nplohs.market.trade.entity.Trade;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,7 +27,11 @@ public class TradeDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CreateReviewRequest {
+        @Min(value = 1, message = "평점은 1~5점 사이여야 합니다.")
+        @Max(value = 5, message = "평점은 1~5점 사이여야 합니다.")
         private int score;
+
+        @Size(max = 255, message = "후기는 255자 이하로 작성해주세요.")
         private String comment;
     }
 

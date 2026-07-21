@@ -59,6 +59,19 @@ public class JwtService {
         }
     }
 
+    /**
+     * refresh 토큰은 /api/auth/refresh 전용이어야 한다. type 클레임을 확인하지 않으면
+     * 탈취된 refresh 토큰(유효기간 14일)이 만료 전까지 계속 access 토큰처럼 통해버려서,
+     * refresh 토큰 로테이션으로도 무력화되지 않는 사실상 영구 자격증명이 되어버린다.
+     */
+    public boolean isAccessToken(String token) {
+        try {
+            return "access".equals(parseClaims(token).get("type", String.class));
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     private Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getKey())

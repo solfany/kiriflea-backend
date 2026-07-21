@@ -18,6 +18,7 @@ public class ProductCreateRequest {
     @Size(max = 100, message = "제목은 100자 이하입니다.")
     private String title;
 
+    @Size(max = 1000, message = "설명은 1000자 이하입니다.")
     private String description;
 
     @Min(value = 0, message = "가격은 0원 이상이어야 합니다.")

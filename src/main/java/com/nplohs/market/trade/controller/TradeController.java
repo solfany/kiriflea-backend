@@ -2,6 +2,7 @@ package com.nplohs.market.trade.controller;
 
 import com.nplohs.market.trade.dto.TradeDto;
 import com.nplohs.market.trade.service.TradeService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -28,7 +29,7 @@ public class TradeController {
     }
 
     @PostMapping("/{tradeId}/reviews")
-    public ResponseEntity<?> leaveReview(@PathVariable Long tradeId, @RequestBody TradeDto.CreateReviewRequest request, Authentication authentication) {
+    public ResponseEntity<?> leaveReview(@PathVariable Long tradeId, @RequestBody @Valid TradeDto.CreateReviewRequest request, Authentication authentication) {
         try {
             TradeDto.ReviewResponse response = tradeService.leaveReview(authentication.getName(), tradeId, request);
             return ResponseEntity.ok(Map.of("success", true, "data", response));

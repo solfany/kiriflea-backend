@@ -15,15 +15,22 @@ public class EmailVerificationCode {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @org.hibernate.annotations.Comment("고유 ID")
     private Long id;
 
     @Column(nullable = false, length = 100)
+    @org.hibernate.annotations.Comment("이메일")
+
     private String email;
 
     @Column(nullable = false, length = 6)
+    @org.hibernate.annotations.Comment("코드")
+
     private String code;
 
     @Column(nullable = false)
+    @org.hibernate.annotations.Comment("만료 일시")
+
     private LocalDateTime expiresAt;
 
     @Column(nullable = false)

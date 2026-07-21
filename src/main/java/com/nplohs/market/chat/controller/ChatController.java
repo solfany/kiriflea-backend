@@ -3,6 +3,7 @@ package com.nplohs.market.chat.controller;
 import com.nplohs.market.chat.dto.ChatMessageDto;
 import com.nplohs.market.chat.dto.ChatRoomResponse;
 import com.nplohs.market.chat.service.ChatService;
+import com.nplohs.market.common.ratelimit.RateLimiter;
 import com.nplohs.market.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +26,10 @@ public class ChatController {
 
     private final ChatService            chatService;
     private final SimpMessagingTemplate  messagingTemplate;
+    private final RateLimiter            rateLimiter;
+
+    private static final int    CHAT_SEND_MAX_PER_WINDOW = 15;
+    private static final Duration CHAT_SEND_WINDOW = Duration.ofSeconds(10);
 
     // ── REST ─────────────────────────────────────────────────────
 
@@ -100,6 +106,10 @@ public class ChatController {
     public void sendMessage(@DestinationVariable Long roomId,
                             @Payload ChatMessageDto payload,
                             Principal principal) {
+        if (!rateLimiter.tryAcquire("chat:send:" + principal.getName(), CHAT_SEND_MAX_PER_WINDOW, CHAT_SEND_WINDOW)) {
+            throw new IllegalStateException("메시지를 너무 빠르게 보내고 있습니다. 잠시 후 다시 시도해주세요.");
+        }
+
         String type = payload.getType() != null ? payload.getType() : "TEXT";
         ChatMessageDto saved = chatService.saveMessage(principal.getName(), roomId, payload.getContent(), type);
         messagingTemplate.convertAndSend("/topic/chat/" + roomId, saved);

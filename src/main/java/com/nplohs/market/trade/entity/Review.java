@@ -16,6 +16,7 @@ public class Review {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @org.hibernate.annotations.Comment("고유 ID")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,9 +38,13 @@ public class Review {
     private String comment;
 
     @Column(nullable = false, updatable = false)
+    @org.hibernate.annotations.Comment("생성 일시")
+
     private LocalDateTime createdAt;
 
     @Column(nullable = false, columnDefinition = "boolean default false")
+    @org.hibernate.annotations.Comment("숨김 여부")
+
     private boolean isHidden = false;
 
     @PrePersist

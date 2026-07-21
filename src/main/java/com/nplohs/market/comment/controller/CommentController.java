@@ -2,6 +2,7 @@ package com.nplohs.market.comment.controller;
 
 import com.nplohs.market.comment.service.CommentService;
 import com.nplohs.market.common.response.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,7 +31,7 @@ public class CommentController {
     public ResponseEntity<ApiResponse<CommentService.CommentResponse>> create(
             @PathVariable Long productId,
             @AuthenticationPrincipal UserDetails user,
-            @RequestBody CommentService.CreateRequest req) {
+            @RequestBody @Valid CommentService.CreateRequest req) {
         return ResponseEntity.ok(ApiResponse.ok(commentService.create(productId, user.getUsername(), req)));
     }
 
@@ -50,7 +51,7 @@ public class CommentController {
             @PathVariable Long productId,
             @PathVariable Long commentId,
             @AuthenticationPrincipal UserDetails user,
-            @RequestBody CommentService.EditRequest req) {
+            @RequestBody @Valid CommentService.EditRequest req) {
         return ResponseEntity.ok(ApiResponse.ok(commentService.edit(commentId, user.getUsername(), req)));
     }
 }

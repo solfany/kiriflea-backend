@@ -13,11 +13,14 @@ import com.nplohs.market.product.entity.ProductStatus;
 import com.nplohs.market.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -38,8 +41,12 @@ public class AuctionService {
     private final SimpMessagingTemplate messagingTemplate;
     private final com.nplohs.market.trade.repository.TradeRepository tradeRepository;
     private final com.nplohs.market.notification.service.NotificationService notificationService;
+    // 같은 빈 내부에서 @Transactional 메서드를 직접 호출하면(self-invocation) 프록시를 안 거쳐서
+    // 트랜잭션이 안 걸리므로, 낙관적 락 재시도를 위해 프록시를 통해 자기 자신을 다시 호출한다.
+    private final ObjectProvider<AuctionService> selfProvider;
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private static final int MAX_BID_RETRIES = 3;
 
     // ── 입찰 목록 ────────────────────────────────────────────────
     public List<AuctionDto.BidResponse> getBids(Long productId) {
@@ -49,8 +56,29 @@ public class AuctionService {
     }
 
     // ── 입찰하기 ─────────────────────────────────────────────────
-    @Transactional
+    // 동시에 여러 입찰이 들어와 낙관적 락(@Version) 충돌이 나면, 최신 currentPrice 기준으로
+    // 다시 검증하도록 짧게 재시도한다. (프록시를 거쳐야 @Transactional이 걸리므로 self 호출)
+    // 클래스 기본값이 readOnly=true라서, 이 메서드 자체가 트랜잭션을 시작해버리면 그 안에서
+    // 호출하는 placeBidTransactional까지 같은(읽기전용) 트랜잭션에 합류해 쓰기가 막히므로,
+    // 여기서는 트랜잭션을 아예 띄우지 않고 매 재시도마다 새 트랜잭션을 열도록 한다.
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public AuctionDto.BidResponse placeBid(Long productId, String userEmail, Long bidAmount) {
+        AuctionService self = selfProvider.getObject();
+        for (int attempt = 1; attempt <= MAX_BID_RETRIES; attempt++) {
+            try {
+                return self.placeBidTransactional(productId, userEmail, bidAmount);
+            } catch (ObjectOptimisticLockingFailureException e) {
+                if (attempt == MAX_BID_RETRIES) {
+                    throw new IllegalStateException("다른 입찰이 동시에 접수되었습니다. 다시 시도해주세요.");
+                }
+                log.info("입찰 낙관적 락 충돌, 재시도 {}/{} (productId={})", attempt, MAX_BID_RETRIES, productId);
+            }
+        }
+        throw new IllegalStateException("입찰 처리에 실패했습니다.");
+    }
+
+    @Transactional
+    public AuctionDto.BidResponse placeBidTransactional(Long productId, String userEmail, Long bidAmount) {
         User bidder = userRepository.findByEmail(userEmail)
             .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
@@ -121,13 +149,13 @@ public class AuctionService {
     }
 
     // ── 내 입찰 내역 ─────────────────────────────────────────────
-    public List<AuctionDto.MyBidResponse> myBids(String email, int page, int size) {
+    public Page<AuctionDto.MyBidResponse> myBids(String email, int page, int size) {
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         Page<Bid> bids = bidRepository.findHighestBidsByBidderId(user.getId(), PageRequest.of(page, size));
 
-        return bids.stream().map(bid -> {
+        return bids.map(bid -> {
             Auction auction = bid.getAuction();
             Product product = auction.getProduct();
 
@@ -154,7 +182,7 @@ public class AuctionService {
                     .isDeleted(product.isDeleted())
                     .build())
                 .build();
-        }).toList();
+        });
     }
 
     @Transactional
@@ -321,57 +349,81 @@ public class AuctionService {
     }
 
     // ── 만료 경매 자동 마감 (@Scheduled 60초마다) ─────────────────
+    // 경매 하나당 별도 트랜잭션으로 처리한다. 만료 처리 도중 누군가 그 경매에 입찰해서
+    // @Version 충돌이 나도, 그 경매만 다음 주기로 미뤄질 뿐 같은 배치의 다른 경매들까지
+    // 통째로 롤백되지 않도록 하기 위함이다 (예전에는 한 트랜잭션으로 묶여있어서, 하나만
+    // 충돌해도 배치 전체의 마감 처리가 롤백됐다).
     @Scheduled(fixedDelay = 60_000)
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void closeExpiredAuctions() {
-        List<Auction> expired = auctionRepository
-            .findByEndAtBeforeAndStatus(LocalDateTime.now(), AuctionStatus.ACTIVE);
+        List<Long> expiredIds = auctionRepository
+            .findByEndAtBeforeAndStatus(LocalDateTime.now(), AuctionStatus.ACTIVE)
+            .stream().map(Auction::getId).toList();
 
-        for (Auction auction : expired) {
-            Bid top = bidRepository
-                .findFirstByAuction_IdOrderByAmountDesc(auction.getId())
-                .orElse(null);
-
-            if (top != null) {
-                auction.close(top.getBidder());
-                auction.getProduct().changeStatus(ProductStatus.RESERVED);
-                
-                // 낙찰자에게 알림 발송
-                notificationService.createNotification(
-                    top.getBidder(),
-                    com.nplohs.market.notification.entity.NotificationType.AUCTION_CLOSED,
-                    "축하합니다! '" + auction.getProduct().getTitle() + "' 경매에 최종 낙찰되었습니다.",
-                    "/products/" + auction.getProduct().getId()
-                );
-                
-                // 판매자에게 알림 발송
-                notificationService.createNotification(
-                    auction.getProduct().getSeller(),
-                    com.nplohs.market.notification.entity.NotificationType.AUCTION_CLOSED,
-                    "경매가 성공적으로 종료되었습니다. 낙찰자와 거래를 시작해보세요.",
-                    "/products/" + auction.getProduct().getId()
-                );
-            } else {
-                auction.cancel();
-                auction.getProduct().changeStatus(ProductStatus.SALE);
+        AuctionService self = selfProvider.getObject();
+        int closedCount = 0;
+        for (Long auctionId : expiredIds) {
+            try {
+                self.closeOneExpiredAuction(auctionId);
+                closedCount++;
+            } catch (ObjectOptimisticLockingFailureException e) {
+                log.warn("closeExpiredAuctions: auctionId={}에 동시 갱신이 있어 이번 주기는 건너뜀, 다음 주기에 재시도", auctionId);
             }
-            auctionRepository.save(auction);
+        }
+        if (closedCount > 0) {
+            log.info("closeExpiredAuctions: {} auctions closed", closedCount);
+        }
+    }
 
-            // 마감 STOMP 알림
-            AuctionDto.AuctionUpdateMessage msg = AuctionDto.AuctionUpdateMessage.builder()
-                .productId(auction.getProduct().getId())
-                .currentBid(auction.getCurrentPrice().longValue())
-                .bidCount(auction.getBidCount())
-                .lastBidderNickname(top != null ? top.getBidder().getNickname() : "")
-                .remainingMs(0)
-                .status(auction.getStatus().name())
-                .build();
-            messagingTemplate.convertAndSend(
-                "/topic/product/" + auction.getProduct().getId() + "/auction", msg);
+    @Transactional
+    public void closeOneExpiredAuction(Long auctionId) {
+        Auction auction = auctionRepository.findById(auctionId).orElse(null);
+        // 그 사이 상태가 바뀌었거나(이미 처리됨) 마감 시간이 연장됐으면 이번엔 건너뛴다.
+        if (auction == null || auction.getStatus() != AuctionStatus.ACTIVE
+                || auction.getEndAt().isAfter(LocalDateTime.now())) {
+            return;
         }
-        if (!expired.isEmpty()) {
-            log.info("closeExpiredAuctions: {} auctions closed", expired.size());
+
+        Bid top = bidRepository
+            .findFirstByAuction_IdOrderByAmountDesc(auction.getId())
+            .orElse(null);
+
+        if (top != null) {
+            auction.close(top.getBidder());
+            auction.getProduct().changeStatus(ProductStatus.RESERVED);
+
+            // 낙찰자에게 알림 발송
+            notificationService.createNotification(
+                top.getBidder(),
+                com.nplohs.market.notification.entity.NotificationType.AUCTION_CLOSED,
+                "축하합니다! '" + auction.getProduct().getTitle() + "' 경매에 최종 낙찰되었습니다.",
+                "/products/" + auction.getProduct().getId()
+            );
+
+            // 판매자에게 알림 발송
+            notificationService.createNotification(
+                auction.getProduct().getSeller(),
+                com.nplohs.market.notification.entity.NotificationType.AUCTION_CLOSED,
+                "경매가 성공적으로 종료되었습니다. 낙찰자와 거래를 시작해보세요.",
+                "/products/" + auction.getProduct().getId()
+            );
+        } else {
+            auction.cancel();
+            auction.getProduct().changeStatus(ProductStatus.SALE);
         }
+        auctionRepository.save(auction);
+
+        // 마감 STOMP 알림
+        AuctionDto.AuctionUpdateMessage msg = AuctionDto.AuctionUpdateMessage.builder()
+            .productId(auction.getProduct().getId())
+            .currentBid(auction.getCurrentPrice().longValue())
+            .bidCount(auction.getBidCount())
+            .lastBidderNickname(top != null ? top.getBidder().getNickname() : "")
+            .remainingMs(0)
+            .status(auction.getStatus().name())
+            .build();
+        messagingTemplate.convertAndSend(
+            "/topic/product/" + auction.getProduct().getId() + "/auction", msg);
     }
 
     // ── 내부 헬퍼 ─────────────────────────────────────────────────

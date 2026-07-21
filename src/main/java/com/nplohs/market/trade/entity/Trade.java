@@ -17,21 +17,27 @@ public class Trade {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @org.hibernate.annotations.Comment("고유 ID")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
+    @org.hibernate.annotations.Comment("상품")
     private Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
+    @org.hibernate.annotations.Comment("판매자")
     private User seller;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
+    @org.hibernate.annotations.Comment("구매자")
     private User buyer;
 
     @Column(nullable = false, updatable = false)
+    @org.hibernate.annotations.Comment("생성 일시")
+
     private LocalDateTime createdAt;
 
     @PrePersist

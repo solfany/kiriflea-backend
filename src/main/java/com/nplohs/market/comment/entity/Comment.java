@@ -20,17 +20,22 @@ public class Comment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @org.hibernate.annotations.Comment("고유 ID")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
+    @org.hibernate.annotations.Comment("상품")
     private Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
+    @org.hibernate.annotations.Comment("작성자")
     private User author;
 
     @Column(columnDefinition = "TEXT", nullable = false)
+    @org.hibernate.annotations.Comment("내용")
+
     private String content;
 
     // 'private'는 예약어라 'secret'으로 선언, JSON 직렬화 시 isPrivate로 노출
@@ -46,6 +51,8 @@ public class Comment {
     private List<Comment> replies = new ArrayList<>();
 
     @Column(nullable = false, updatable = false)
+    @org.hibernate.annotations.Comment("생성 일시")
+
     private LocalDateTime createdAt;
 
     @PrePersist

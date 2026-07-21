@@ -11,4 +11,6 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     @Query("SELECT c FROM Comment c WHERE c.product.id = :productId AND c.parent IS NULL ORDER BY c.createdAt ASC")
     List<Comment> findTopLevelByProductId(@Param("productId") Long productId);
+    
+    void deleteByAuthor_Id(Long authorId);
 }

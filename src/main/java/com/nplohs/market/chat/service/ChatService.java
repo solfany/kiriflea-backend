@@ -13,10 +13,16 @@ import com.nplohs.market.product.repository.ProductRepository;
 import com.nplohs.market.trade.repository.TradeRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -37,11 +43,16 @@ public class ChatService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found: " + productId));
 
+        if (!product.getSeller().getId().equals(sellerId)) {
+            throw new IllegalArgumentException("해당 상품의 판매자가 아닙니다.");
+        }
+
         ChatRoom room = chatRoomRepository
                 .findByBuyer_IdAndSeller_IdAndProduct_Id(buyer.getId(), sellerId, productId)
                 .orElseGet(() -> chatRoomRepository.save(new ChatRoom(buyer, seller, product)));
 
-        int unreadCount = (int) chatMessageRepository.countByRoom_IdAndSender_IdNotAndReadAtIsNull(room.getId(), buyer.getId());
+        LocalDateTime leftAt = room.getBuyer().getId().equals(buyer.getId()) ? room.getBuyerLeftAt() : room.getSellerLeftAt();
+        int unreadCount = (int) chatMessageRepository.countUnreadSince(room.getId(), buyer.getId(), leftAt);
         boolean hasTrade = tradeRepository.findByProduct_Id(productId).isPresent();
         return new ChatRoomResponse(room, buyer.getId(), unreadCount, hasTrade);
     }
@@ -62,7 +73,8 @@ public class ChatService {
                 .findByBuyer_IdAndSeller_IdAndProduct_Id(buyerId, seller.getId(), productId)
                 .orElseGet(() -> chatRoomRepository.save(new ChatRoom(buyer, seller, product)));
 
-        int unreadCount = (int) chatMessageRepository.countByRoom_IdAndSender_IdNotAndReadAtIsNull(room.getId(), seller.getId());
+        LocalDateTime leftAt = room.getBuyer().getId().equals(seller.getId()) ? room.getBuyerLeftAt() : room.getSellerLeftAt();
+        int unreadCount = (int) chatMessageRepository.countUnreadSince(room.getId(), seller.getId(), leftAt);
         boolean hasTrade = tradeRepository.findByProduct_Id(productId).isPresent();
         return new ChatRoomResponse(room, seller.getId(), unreadCount, hasTrade);
     }
@@ -71,13 +83,15 @@ public class ChatService {
     @Transactional(readOnly = true)
     public List<ChatRoomResponse> getRooms(String userEmail) {
         User user = findUser(userEmail);
-        return chatRoomRepository.findByUserId(user.getId())
-                .stream()
-                .map(room -> {
-                    int unreadCount = (int) chatMessageRepository.countByRoom_IdAndSender_IdNotAndReadAtIsNull(room.getId(), user.getId());
-                    boolean hasTrade = tradeRepository.findByProduct_Id(room.getProduct().getId()).isPresent();
-                    return new ChatRoomResponse(room, user.getId(), unreadCount, hasTrade);
-                })
+        List<ChatRoom> rooms = chatRoomRepository.findByUserId(user.getId());
+        Map<Long, Integer> unreadCounts = computeUnreadCounts(rooms, user.getId());
+        Set<Long> tradedProductIds = productIdsWithTrade(rooms);
+
+        return rooms.stream()
+                .map(room -> new ChatRoomResponse(
+                        room, user.getId(),
+                        unreadCounts.getOrDefault(room.getId(), 0),
+                        tradedProductIds.contains(room.getProduct().getId())))
                 .toList();
     }
 
@@ -85,10 +99,36 @@ public class ChatService {
     @Transactional(readOnly = true)
     public int getTotalUnreadCount(String userEmail) {
         User user = findUser(userEmail);
-        return chatRoomRepository.findByUserId(user.getId())
-                .stream()
-                .mapToInt(room -> (int) chatMessageRepository.countByRoom_IdAndSender_IdNotAndReadAtIsNull(room.getId(), user.getId()))
-                .sum();
+        List<ChatRoom> rooms = chatRoomRepository.findByUserId(user.getId());
+        return computeUnreadCounts(rooms, user.getId()).values().stream().mapToInt(Integer::intValue).sum();
+    }
+
+    // 방 개수만큼 countUnreadSince/findByProduct_Id를 반복 호출하던 N+1을 없애기 위해,
+    // 안 읽은 메시지와 거래 존재 여부를 방 목록 단위로 한 번씩만 조회한다.
+    private Map<Long, Integer> computeUnreadCounts(List<ChatRoom> rooms, Long userId) {
+        if (rooms.isEmpty()) return Map.of();
+
+        List<Long> roomIds = rooms.stream().map(ChatRoom::getId).toList();
+        Map<Long, LocalDateTime> leftAtByRoom = new HashMap<>();
+        for (ChatRoom room : rooms) {
+            LocalDateTime leftAt = room.getBuyer().getId().equals(userId) ? room.getBuyerLeftAt() : room.getSellerLeftAt();
+            leftAtByRoom.put(room.getId(), leftAt);
+        }
+
+        Map<Long, Integer> counts = new HashMap<>();
+        for (ChatMessageRepository.UnreadMessageView v : chatMessageRepository.findUnreadForRooms(roomIds, userId)) {
+            LocalDateTime leftAt = leftAtByRoom.get(v.getRoomId());
+            if (leftAt == null || v.getCreatedAt().isAfter(leftAt)) {
+                counts.merge(v.getRoomId(), 1, Integer::sum);
+            }
+        }
+        return counts;
+    }
+
+    private Set<Long> productIdsWithTrade(List<ChatRoom> rooms) {
+        if (rooms.isEmpty()) return Set.of();
+        List<Long> productIds = rooms.stream().map(r -> r.getProduct().getId()).distinct().toList();
+        return new HashSet<>(tradeRepository.findProductIdsWithTrade(productIds));
     }
 
     // ── 채팅방 단건 조회 ─────────────────────────────────────────
@@ -97,29 +137,38 @@ public class ChatService {
         User user = findUser(userEmail);
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new EntityNotFoundException("ChatRoom not found: " + roomId));
-        int unreadCount = (int) chatMessageRepository.countByRoom_IdAndSender_IdNotAndReadAtIsNull(room.getId(), user.getId());
+        assertParticipant(room, user);
+        LocalDateTime leftAt = room.getBuyer().getId().equals(user.getId()) ? room.getBuyerLeftAt() : room.getSellerLeftAt();
+        int unreadCount = (int) chatMessageRepository.countUnreadSince(room.getId(), user.getId(), leftAt);
         boolean hasTrade = tradeRepository.findByProduct_Id(room.getProduct().getId()).isPresent();
         return new ChatRoomResponse(room, user.getId(), unreadCount, hasTrade);
     }
 
     // ── 메시지 목록 ──────────────────────────────────────────────
     @Transactional(readOnly = true)
-    public List<ChatMessageDto> getMessages(String userEmail, Long roomId) {
-        findUser(userEmail); // auth check
-        return chatMessageRepository.findByRoom_IdOrderByCreatedAtAsc(roomId)
-                .stream().map(ChatMessageDto::new).toList();
-    }
-
-    @Transactional(readOnly = true)
     public org.springframework.data.domain.Page<ChatMessageDto> getMessages(String userEmail, Long roomId, org.springframework.data.domain.Pageable pageable) {
-        findUser(userEmail); // auth check
-        return chatMessageRepository.findByRoom_IdOrderByCreatedAtDesc(roomId, pageable)
+        User user = findUser(userEmail); // auth check
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("ChatRoom not found: " + roomId));
+        assertParticipant(room, user);
+        LocalDateTime leftAt = room.getBuyer().getId().equals(user.getId()) ? room.getBuyerLeftAt() : room.getSellerLeftAt();
+
+        return chatMessageRepository.findMessagesSincePage(roomId, leftAt, pageable)
                 .map(ChatMessageDto::new);
     }
+
+    private static final int MAX_MESSAGE_LENGTH = 2000;
 
     // ── STOMP 메시지 저장 + 반환 (MessageBroker로 브로드캐스트) ──
     @Transactional
     public ChatMessageDto saveMessage(String senderEmail, Long roomId, String content, String type) {
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("메시지 내용을 입력해주세요.");
+        }
+        if (content.length() > MAX_MESSAGE_LENGTH) {
+            throw new IllegalArgumentException("메시지는 " + MAX_MESSAGE_LENGTH + "자 이하로 작성해주세요.");
+        }
+
         User     sender = findUser(senderEmail);
         ChatRoom room   = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new EntityNotFoundException("ChatRoom not found: " + roomId));
@@ -145,6 +194,9 @@ public class ChatService {
     @Transactional
     public void markRead(String userEmail, Long roomId) {
         User user = findUser(userEmail);
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("ChatRoom not found: " + roomId));
+        assertParticipant(room, user);
         chatMessageRepository.markReadByRoomIdAndUserId(roomId, user.getId());
     }
 
@@ -153,9 +205,17 @@ public class ChatService {
         User user = findUser(userEmail);
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new EntityNotFoundException("ChatRoom not found"));
-        return room.getSeller().getId().equals(user.getId()) 
-                ? room.getBuyer().getId() 
+        assertParticipant(room, user);
+        return room.getSeller().getId().equals(user.getId())
+                ? room.getBuyer().getId()
                 : room.getSeller().getId();
+    }
+
+    // ── 방 참여자 검증 ───────────────────────────────────────────
+    private void assertParticipant(ChatRoom room, User user) {
+        if (!room.getBuyer().getId().equals(user.getId()) && !room.getSeller().getId().equals(user.getId())) {
+            throw new AccessDeniedException("채팅방 접근 권한이 없습니다.");
+        }
     }
 
     // ── 채팅방 삭제 ────────────────────────────────────────────────

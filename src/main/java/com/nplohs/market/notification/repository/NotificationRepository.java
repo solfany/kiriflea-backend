@@ -32,10 +32,10 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Query("DELETE FROM Notification n WHERE n.id = :id AND n.user.id = :userId")
     void deleteByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 
-    @Query("SELECT COUNT(n) > 0 FROM Notification n WHERE n.user.id = :userId AND n.type = :type AND n.linkUrl = :linkUrl AND n.message LIKE CONCAT(:nickname, '%')")
+    @Query("SELECT COUNT(n) > 0 FROM Notification n WHERE n.user.id = :userId AND n.type = :type AND n.linkUrl = :linkUrl AND n.message LIKE CONCAT(:nickname, '%') ESCAPE '\\'")
     boolean existsLikeNotification(@Param("userId") Long userId, @Param("type") NotificationType type, @Param("linkUrl") String linkUrl, @Param("nickname") String nickname);
 
     @Modifying
-    @Query("DELETE FROM Notification n WHERE n.user.id = :userId AND n.type = :type AND n.linkUrl = :linkUrl AND n.message LIKE CONCAT(:nickname, '%')")
+    @Query("DELETE FROM Notification n WHERE n.user.id = :userId AND n.type = :type AND n.linkUrl = :linkUrl AND n.message LIKE CONCAT(:nickname, '%') ESCAPE '\\'")
     void deleteLikeNotification(@Param("userId") Long userId, @Param("type") NotificationType type, @Param("linkUrl") String linkUrl, @Param("nickname") String nickname);
 }

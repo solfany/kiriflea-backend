@@ -7,6 +7,7 @@ import lombok.Getter;
 import java.time.format.DateTimeFormatter;
 
 @Getter
+
 public class NotificationDto {
     private Long id;
     private String type;

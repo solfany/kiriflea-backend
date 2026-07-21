@@ -18,18 +18,22 @@ public class ChatRoom {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @org.hibernate.annotations.Comment("고유 ID")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
+    @org.hibernate.annotations.Comment("구매자")
     private User buyer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
+    @org.hibernate.annotations.Comment("판매자")
     private User seller;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
+    @org.hibernate.annotations.Comment("상품")
     private Product product;
 
     private String lastMessage;
@@ -37,6 +41,8 @@ public class ChatRoom {
     private LocalDateTime lastMessageAt;
 
     @Column(nullable = false, updatable = false)
+    @org.hibernate.annotations.Comment("생성 일시")
+
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
@@ -44,6 +50,10 @@ public class ChatRoom {
 
     @Column(nullable = false)
     private boolean sellerLeft = false;
+
+    private LocalDateTime buyerLeftAt;
+
+    private LocalDateTime sellerLeftAt;
 
     @PrePersist
     protected void onCreate() { this.createdAt = LocalDateTime.now(); }
@@ -61,9 +71,15 @@ public class ChatRoom {
 
     public void setBuyerLeft(boolean left) {
         this.buyerLeft = left;
+        if (left) {
+            this.buyerLeftAt = LocalDateTime.now();
+        }
     }
 
     public void setSellerLeft(boolean left) {
         this.sellerLeft = left;
+        if (left) {
+            this.sellerLeftAt = LocalDateTime.now();
+        }
     }
 }

@@ -27,12 +27,18 @@ public class NotificationService {
 
     @Transactional
     public void deleteLikeNotification(Long sellerId, String linkUrl, String nickname) {
-        notificationRepository.deleteLikeNotification(sellerId, NotificationType.LIKE, linkUrl, nickname);
+        notificationRepository.deleteLikeNotification(sellerId, NotificationType.LIKE, linkUrl, escapeLike(nickname));
     }
 
     @Transactional(readOnly = true)
     public boolean existsLikeNotification(Long sellerId, String linkUrl, String nickname) {
-        return notificationRepository.existsLikeNotification(sellerId, NotificationType.LIKE, linkUrl, nickname);
+        return notificationRepository.existsLikeNotification(sellerId, NotificationType.LIKE, linkUrl, escapeLike(nickname));
+    }
+
+    // 닉네임은 사용자가 자유롭게 정하므로 '%'/'_'가 들어가면 LIKE 패턴의 와일드카드로 해석되어
+    // 알림 중복 제거가 엉뚱하게 동작할 수 있다. LIKE 특수문자를 이스케이프해 리터럴로 취급한다.
+    private String escapeLike(String value) {
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     @Transactional(readOnly = true)

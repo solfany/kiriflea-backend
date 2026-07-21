@@ -9,7 +9,7 @@ import org.hibernate.annotations.Comment;
 import java.time.LocalDateTime;
 
 @Entity
-@Comment("채팅 메시지")
+@org.hibernate.annotations.Comment("채팅 메시지")
 @Table(name = "chat_messages")
 @Getter
 @NoArgsConstructor
@@ -17,6 +17,7 @@ public class ChatMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @org.hibernate.annotations.Comment("고유 ID")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -25,17 +26,24 @@ public class ChatMessage {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
+    @org.hibernate.annotations.Comment("발신자")
     private User sender;
 
     @Column(columnDefinition = "TEXT", nullable = false)
+    @org.hibernate.annotations.Comment("내용")
+
     private String content;
 
     @Column(nullable = false)
+    @org.hibernate.annotations.Comment("타입")
+
     private String type = "TEXT";
 
     private LocalDateTime readAt;
 
     @Column(nullable = false, updatable = false)
+    @org.hibernate.annotations.Comment("생성 일시")
+
     private LocalDateTime createdAt;
 
     @PrePersist
