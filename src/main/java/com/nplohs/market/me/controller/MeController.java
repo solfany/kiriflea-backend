@@ -1,8 +1,8 @@
 package com.nplohs.market.me.controller;
 
 import com.nplohs.market.auction.entity.Auction;
-import com.nplohs.market.auth.entity.User;
-import com.nplohs.market.auth.repository.UserRepository;
+import com.nplohs.market.user.entity.User;
+import com.nplohs.market.user.repository.UserRepository;
 import com.nplohs.market.common.response.ApiResponse;
 import com.nplohs.market.me.dto.ProfileUpdateRequest;
 import com.nplohs.market.product.entity.Product;
@@ -55,7 +55,6 @@ public class MeController {
         Map<String, Object> res = new HashMap<>();
         res.put("id", user.getId());
         res.put("email", user.getEmail());
-        res.put("name", user.getName());
         res.put("nickname", user.getNickname());
         res.put("profileImage", user.getProfileImage());
         res.put("mannerScore", user.getMannerScore());
@@ -78,12 +77,11 @@ public class MeController {
             throw new IllegalArgumentException("이미 사용중인 닉네임입니다.");
         }
         
-        user.changeProfile(name, nickname, profileImage);
+        user.changeProfile(nickname, profileImage);
         
         Map<String, Object> res = new HashMap<>();
         res.put("id", user.getId());
         res.put("email", user.getEmail());
-        res.put("name", user.getName());
         res.put("nickname", user.getNickname());
         res.put("profileImage", user.getProfileImage());
         res.put("mannerScore", user.getMannerScore());

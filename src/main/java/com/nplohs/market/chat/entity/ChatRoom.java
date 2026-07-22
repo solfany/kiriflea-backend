@@ -1,6 +1,7 @@
 package com.nplohs.market.chat.entity;
 
-import com.nplohs.market.auth.entity.User;
+import org.hibernate.annotations.Comment;
+import com.nplohs.market.user.entity.User;
 import com.nplohs.market.product.entity.Product;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -9,7 +10,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@org.hibernate.annotations.Comment("채팅방")
+@Comment("채팅방")
 @Table(name = "chat_rooms",
        uniqueConstraints = @UniqueConstraint(columnNames = {"buyer_id", "seller_id", "product_id"}))
 @Getter
@@ -18,41 +19,46 @@ public class ChatRoom {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @org.hibernate.annotations.Comment("고유 ID")
+    @Comment("고유 ID")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
-    @org.hibernate.annotations.Comment("구매자")
+    @Comment("구매자")
     private User buyer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
-    @org.hibernate.annotations.Comment("판매자")
+    @Comment("판매자")
     private User seller;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
-    @org.hibernate.annotations.Comment("상품")
+    @Comment("상품")
     private Product product;
 
+    @Comment("lastMessage")
     private String lastMessage;
 
+    @Comment("lastMessageAt")
     private LocalDateTime lastMessageAt;
 
     @Column(nullable = false, updatable = false)
-    @org.hibernate.annotations.Comment("생성 일시")
-
+    @Comment("생성 일시")
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
+    @Comment("buyerLeft")
     private boolean buyerLeft = false;
 
     @Column(nullable = false)
+    @Comment("sellerLeft")
     private boolean sellerLeft = false;
 
+    @Comment("buyerLeftAt")
     private LocalDateTime buyerLeftAt;
 
+    @Comment("sellerLeftAt")
     private LocalDateTime sellerLeftAt;
 
     @PrePersist

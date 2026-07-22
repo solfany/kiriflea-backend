@@ -1,7 +1,7 @@
 package com.nplohs.market.config;
 
-import com.nplohs.market.auth.entity.User;
-import com.nplohs.market.auth.repository.UserRepository;
+import com.nplohs.market.user.entity.User;
+import com.nplohs.market.user.repository.UserRepository;
 import com.nplohs.market.chat.entity.ChatRoom;
 import com.nplohs.market.chat.repository.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;

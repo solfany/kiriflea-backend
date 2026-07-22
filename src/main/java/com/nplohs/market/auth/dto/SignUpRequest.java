@@ -21,10 +21,6 @@ public class SignUpRequest {
     private String password;
 
     @NotBlank
-    @Size(min = 2, max = 20, message = "이름은 2~20자이어야 합니다.")
-    private String name;
-
-    @NotBlank
     @Size(min = 2, max = 15, message = "닉네임은 2~15자이어야 합니다.")
     private String nickname;
 

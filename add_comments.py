@@ -25,13 +25,13 @@ def process_file(filepath):
     with open(filepath, 'r') as f:
         content = f.read()
     
-    if '@org.hibernate.annotations.Comment' in content:
+    if '@Comment' in content:
         return
     
     comment_text = entity_comments[filename]
     
     if '@Entity' in content:
-        new_content = content.replace('@Entity', f'@Entity\n@org.hibernate.annotations.Comment("{comment_text}")', 1)
+        new_content = content.replace('@Entity', f'@Entity\n@Comment("{comment_text}")', 1)
         with open(filepath, 'w') as f:
             f.write(new_content)
 

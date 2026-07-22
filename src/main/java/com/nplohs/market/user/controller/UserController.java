@@ -1,7 +1,7 @@
 package com.nplohs.market.user.controller;
 
-import com.nplohs.market.auth.entity.User;
-import com.nplohs.market.auth.repository.UserRepository;
+import com.nplohs.market.user.entity.User;
+import com.nplohs.market.user.repository.UserRepository;
 import com.nplohs.market.auction.entity.Auction;
 import com.nplohs.market.auction.repository.AuctionRepository;
 import com.nplohs.market.common.response.ApiResponse;

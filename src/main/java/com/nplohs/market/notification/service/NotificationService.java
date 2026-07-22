@@ -4,7 +4,7 @@ import com.nplohs.market.notification.dto.NotificationDto;
 import com.nplohs.market.notification.entity.Notification;
 import com.nplohs.market.notification.entity.NotificationType;
 import com.nplohs.market.notification.repository.NotificationRepository;
-import com.nplohs.market.auth.entity.User;
+import com.nplohs.market.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;

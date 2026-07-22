@@ -1,6 +1,6 @@
 package com.nplohs.market.user.dto;
 
-import com.nplohs.market.auth.entity.User;
+import com.nplohs.market.user.entity.User;
 import lombok.Getter;
 
 import java.time.format.DateTimeFormatter;

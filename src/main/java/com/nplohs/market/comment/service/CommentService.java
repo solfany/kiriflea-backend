@@ -1,7 +1,7 @@
 package com.nplohs.market.comment.service;
 
-import com.nplohs.market.auth.entity.User;
-import com.nplohs.market.auth.repository.UserRepository;
+import com.nplohs.market.user.entity.User;
+import com.nplohs.market.user.repository.UserRepository;
 import com.nplohs.market.comment.entity.Comment;
 import com.nplohs.market.comment.repository.CommentRepository;
 import com.nplohs.market.common.ratelimit.RateLimiter;

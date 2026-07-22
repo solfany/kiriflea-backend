@@ -1,6 +1,6 @@
 package com.nplohs.market.comment.entity;
 
-import com.nplohs.market.auth.entity.User;
+import com.nplohs.market.user.entity.User;
 import com.nplohs.market.product.entity.Product;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -35,24 +35,25 @@ public class Comment {
 
     @Column(columnDefinition = "TEXT", nullable = false)
     @org.hibernate.annotations.Comment("내용")
-
     private String content;
 
     // 'private'는 예약어라 'secret'으로 선언, JSON 직렬화 시 isPrivate로 노출
     @Column(nullable = false)
+    @org.hibernate.annotations.Comment("secret")
     private boolean secret = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
+    @org.hibernate.annotations.Comment("부모")
     private Comment parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("createdAt ASC")
+    @org.hibernate.annotations.Comment("replies")
     private List<Comment> replies = new ArrayList<>();
 
     @Column(nullable = false, updatable = false)
     @org.hibernate.annotations.Comment("생성 일시")
-
     private LocalDateTime createdAt;
 
     @PrePersist

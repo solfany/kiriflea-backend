@@ -1,7 +1,7 @@
 package com.nplohs.market.chat.service;
 
-import com.nplohs.market.auth.entity.User;
-import com.nplohs.market.auth.repository.UserRepository;
+import com.nplohs.market.user.entity.User;
+import com.nplohs.market.user.repository.UserRepository;
 import com.nplohs.market.chat.dto.ChatMessageDto;
 import com.nplohs.market.chat.dto.ChatRoomResponse;
 import com.nplohs.market.chat.entity.ChatMessage;

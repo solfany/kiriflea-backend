@@ -1,6 +1,6 @@
 package com.nplohs.market.chat.entity;
 
-import com.nplohs.market.auth.entity.User;
+import com.nplohs.market.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,7 +9,7 @@ import org.hibernate.annotations.Comment;
 import java.time.LocalDateTime;
 
 @Entity
-@org.hibernate.annotations.Comment("채팅 메시지")
+@Comment("채팅 메시지")
 @Table(name = "chat_messages")
 @Getter
 @NoArgsConstructor
@@ -17,33 +17,32 @@ public class ChatMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @org.hibernate.annotations.Comment("고유 ID")
+    @Comment("고유 ID")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
+    @Comment("room")
     private ChatRoom room;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
-    @org.hibernate.annotations.Comment("발신자")
+    @Comment("발신자")
     private User sender;
 
     @Column(columnDefinition = "TEXT", nullable = false)
-    @org.hibernate.annotations.Comment("내용")
-
+    @Comment("내용")
     private String content;
 
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("타입")
-
+    @Comment("타입")
     private String type = "TEXT";
 
+    @Comment("읽은 일시")
     private LocalDateTime readAt;
 
     @Column(nullable = false, updatable = false)
-    @org.hibernate.annotations.Comment("생성 일시")
-
+    @Comment("생성 일시")
     private LocalDateTime createdAt;
 
     @PrePersist

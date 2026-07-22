@@ -1,8 +1,8 @@
 package com.nplohs.market.auth.service;
 
 import com.nplohs.market.auth.dto.*;
-import com.nplohs.market.auth.entity.User;
-import com.nplohs.market.auth.repository.UserRepository;
+import com.nplohs.market.user.entity.User;
+import com.nplohs.market.user.repository.UserRepository;
 import com.nplohs.market.config.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,10 +17,10 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository  userRepository;
-    private final EmailService    emailService;
+    private final UserRepository userRepository;
+    private final EmailService emailService;
     private final NicknameService nicknameService;
-    private final JwtService      jwtService;
+    private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final RedisTemplate<String, Object> redis;
 
@@ -55,10 +55,8 @@ public class AuthService {
 
         User user = new User(
                 email,
-                passwordEncoder.encode(request.getPassword()),
-                request.getName(),
-                request.getNickname()
-        );
+                                passwordEncoder.encode(request.getPassword()),
+                request.getNickname());
         user.verifyEmail();
 
         if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
@@ -119,7 +117,7 @@ public class AuthService {
         if (!jwtService.isValid(refreshToken))
             throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
 
-        String email  = jwtService.extractEmail(refreshToken);
+        String email = jwtService.extractEmail(refreshToken);
         Object stored = redis.opsForValue().get(REFRESH_PREFIX + email);
         if (stored == null || !stored.toString().equals(refreshToken))
             throw new IllegalArgumentException("만료된 토큰입니다.");
@@ -137,20 +135,19 @@ public class AuthService {
 
     // ── 내부 헬퍼 ────────────────────────────────────────────────
     private TokenResponse buildTokens(User user) {
-        String accessToken  = jwtService.generateAccessToken(user.getEmail(), user.getId());
+        String accessToken = jwtService.generateAccessToken(user.getEmail(), user.getId());
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
 
         redis.opsForValue().set(
                 REFRESH_PREFIX + user.getEmail(),
                 refreshToken,
                 refreshExpiryMs,
-                TimeUnit.MILLISECONDS
-        );
+                TimeUnit.MILLISECONDS);
 
         return new TokenResponse(
                 accessToken,
                 refreshToken,
-                new TokenResponse.UserSummary(user.getId(), user.getEmail(), user.getNickname(), user.getProfileImage(), user.getMannerScore())
-        );
+                new TokenResponse.UserSummary(user.getId(), user.getEmail(), user.getNickname(), user.getProfileImage(),
+                        user.getMannerScore()));
     }
 }

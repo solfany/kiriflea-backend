@@ -1,16 +1,17 @@
 package com.nplohs.market.product.entity;
 
-import com.nplohs.market.auth.entity.User;
+import com.nplohs.market.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Comment;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@org.hibernate.annotations.Comment("판매/경매 상품 정보")
+@Comment("판매/경매 상품 정보")
 @Table(name = "products")
 @Getter
 @NoArgsConstructor
@@ -18,65 +19,66 @@ public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @org.hibernate.annotations.Comment("상품 고유 ID")
+    @Comment("상품 고유 ID")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
-    @org.hibernate.annotations.Comment("판매자 ID (users 외래키)")
+    @Comment("판매자")
     private User seller;
 
     @Column(nullable = false, length = 100)
-    @org.hibernate.annotations.Comment("상품명 (제목)")
+    @Comment("제목")
     private String title;
 
     @Column(columnDefinition = "TEXT")
-    @org.hibernate.annotations.Comment("상품 설명")
+    @Comment("상품 설명")
     private String description;
 
-    @org.hibernate.annotations.Comment("상품 가격 (경매 전용일 경우 null)")
-    private Long price;               // null if auction-only
+    @Comment("가격")
+    private Long price;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("카테고리")
+    @Comment("카테고리")
     private ProductCategory category = ProductCategory.OTHER;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("상품 판매 상태")
+    @Comment("상품 판매 상태")
     private ProductStatus status = ProductStatus.SALE;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("상품 거래 방식 (일반/경매)")
+    @Comment("타입")
     private ProductType type = ProductType.NORMAL;
 
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("조회수")
+    @Comment("조회수")
     private int viewCount = 0;
 
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("찜(관심) 수")
+    @Comment("관심수")
     private int wishCount = 0;
 
     @Column(nullable = false, updatable = false)
-    @org.hibernate.annotations.Comment("등록 일시")
+    @Comment("등록 일시")
     private LocalDateTime createdAt;
 
-    @org.hibernate.annotations.Comment("수정 일시")
+    @Comment("수정 일시")
     private LocalDateTime updatedAt;
 
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("삭제 여부")
+    @Comment("삭제 여부")
     private boolean isDeleted = false;
 
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("숨김 여부")
+    @Comment("숨김 여부")
     private boolean isHidden = false;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")
+    @Comment("images")
     private List<ProductImage> images = new ArrayList<>();
 
     @PrePersist

@@ -1,6 +1,6 @@
 package com.nplohs.market.file.service;
 
-import com.nplohs.market.auth.repository.UserRepository;
+import com.nplohs.market.user.repository.UserRepository;
 import com.nplohs.market.product.repository.ProductImageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

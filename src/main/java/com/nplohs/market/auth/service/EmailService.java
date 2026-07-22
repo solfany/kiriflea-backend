@@ -23,7 +23,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final EmailVerificationCodeRepository codeRepository;
-    private final com.nplohs.market.auth.repository.UserRepository userRepository;
+    private final com.nplohs.market.user.repository.UserRepository userRepository;
     private final RedisTemplate<String, Object> redis;
     private final RateLimiter rateLimiter;
 
@@ -47,7 +47,7 @@ public class EmailService {
     public void sendVerificationCode(String email) {
         String lowerEmail = email.toLowerCase();
 
-        java.util.Optional<com.nplohs.market.auth.entity.User> existing = userRepository.findByEmail(lowerEmail);
+        java.util.Optional<com.nplohs.market.user.entity.User> existing = userRepository.findByEmail(lowerEmail);
         if (existing.isPresent()) {
             if (!existing.get().isActive()) {
                 throw new IllegalStateException("탈퇴한 회원입니다. 24시간 뒤에 회원가입 가능합니다.");

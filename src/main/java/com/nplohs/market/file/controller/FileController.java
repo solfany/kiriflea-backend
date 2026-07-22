@@ -1,6 +1,6 @@
 package com.nplohs.market.file.controller;
 
-import com.nplohs.market.auth.repository.UserRepository;
+import com.nplohs.market.user.repository.UserRepository;
 import com.nplohs.market.common.response.ApiResponse;
 import com.nplohs.market.file.service.FileService;
 import jakarta.persistence.EntityNotFoundException;

@@ -1,13 +1,14 @@
-package com.nplohs.market.auth.entity;
+package com.nplohs.market.user.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Comment;
 
 import java.time.LocalDateTime;
 
 @Entity
-@org.hibernate.annotations.Comment("사용자 정보")
+@Comment("사용자 정보")
 @Table(name = "users")
 @Getter
 @NoArgsConstructor
@@ -15,85 +16,79 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @org.hibernate.annotations.Comment("사용자 고유 ID")
+    @Comment("사용자 고유 ID")
     private Long id;
 
     @Column(nullable = false, unique = true, length = 100)
-    @org.hibernate.annotations.Comment("이메일 (로그인 ID)")
+    @Comment("이메일")
     private String email;
 
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("비밀번호 (암호화)")
+    @Comment("비밀번호")
     private String password;
 
-    @Column(nullable = false, length = 20)
-    @org.hibernate.annotations.Comment("실명")
-    private String name;
-
     @Column(nullable = false, unique = true, length = 15)
-    @org.hibernate.annotations.Comment("닉네임 (상점명)")
+    @Comment("닉네임")
     private String nickname;
 
     @Column(length = 255)
-    @org.hibernate.annotations.Comment("프로필 이미지 URL")
+    @Comment("프로필 이미지 URL")
     private String profileImage;
 
     @Column(length = 13)
-    @org.hibernate.annotations.Comment("휴대폰 번호")
+    @Comment("휴대폰 번호")
     private String phoneNumber;
 
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("휴대폰 번호 공개 여부")
+    @Comment("휴대폰 번호 공개 여부")
     private boolean phoneVisible = false;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("권한 (USER/ADMIN)")
+    @Comment("권한")
     private Role role = Role.ROLE_USER;
 
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("이메일 인증 여부")
+    @Comment("이메일 인증 여부")
     private boolean emailVerified = false;
 
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("계정 활성화 상태")
+    @Comment("계정 활성화 상태")
     private boolean active = true;
 
     @Column
-    @org.hibernate.annotations.Comment("탈퇴 일시 (24시간 유예)")
+    @Comment("삭제 일시")
     private LocalDateTime deletedAt;
 
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("매너 온도 (점수)")
+    @Comment("매너 점수")
     private double mannerScore = 0.0;
 
     @Column(nullable = false)
-    @org.hibernate.annotations.Comment("연속 로그인 실패 횟수")
+    @Comment("연속 로그인 실패 횟수")
     private int loginFailCount = 0;
 
-    @org.hibernate.annotations.Comment("계정 잠금 해제 일시")
+    @Comment("계정 잠금 해제 일시")
     private LocalDateTime lockedUntil;
 
     @Column(nullable = false, updatable = false)
-    @org.hibernate.annotations.Comment("가입 일시")
+    @Comment("가입 일시")
     private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() { this.createdAt = LocalDateTime.now(); }
 
-    public User(String email, String password, String name, String nickname) {
+    public User(String email, String password, String nickname) {
         this.email    = email;
-        this.password = password;
-        this.name     = name;
-        this.nickname = nickname;
+                this.password = password;
+                this.nickname = nickname;
     }
 
     public void verifyEmail()                    { this.emailVerified = true; }
     public void changePassword(String encoded)   { this.password = encoded; }
     public void changeNickname(String nickname)  { this.nickname = nickname; }
-    public void changeProfile(String name, String nickname, String profileImage) {
-        if (name != null) this.name = name;
-        if (nickname != null) this.nickname = nickname;
+    public void changeProfile(String nickname, String profileImage) {
+                if (nickname != null) this.nickname = nickname;
         if (profileImage != null) this.profileImage = profileImage;
     }
     public void changePhone(String phone, boolean visible) {
@@ -120,10 +115,9 @@ public class User {
     public void scramblePersonalInfo(String uuid) {
         // email, nickname은 unique 제약조건이 있으므로 난수 조합
         this.email = "deleted_" + uuid + "@kiriflea.local";
-        this.nickname = "탈퇴_" + uuid.substring(0, 8);
+                this.nickname = "탈퇴_" + uuid.substring(0, 8);
         this.password = uuid; // 랜덤 패스워드로 덮어쓰기 (로그인 불가)
-        this.name = "알 수 없음";
-        this.phoneNumber = null;
+                this.phoneNumber = null;
         this.profileImage = null;
     }
 

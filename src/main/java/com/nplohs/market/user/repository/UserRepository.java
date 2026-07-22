@@ -1,6 +1,6 @@
-package com.nplohs.market.auth.repository;
+package com.nplohs.market.user.repository;
 
-import com.nplohs.market.auth.entity.User;
+import com.nplohs.market.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

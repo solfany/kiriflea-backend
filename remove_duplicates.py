@@ -11,10 +11,10 @@ def clean_duplicate_comments(file_path):
     while i < len(lines):
         line = lines[i]
         new_lines.append(line)
-        if "@org.hibernate.annotations.Comment" in line:
+        if "@Comment" in line:
             # Check following lines and skip if they are also @Comment
             j = i + 1
-            while j < len(lines) and "@org.hibernate.annotations.Comment" in lines[j]:
+            while j < len(lines) and "@Comment" in lines[j]:
                 j += 1
             i = j - 1 # skip duplicates
         i += 1
