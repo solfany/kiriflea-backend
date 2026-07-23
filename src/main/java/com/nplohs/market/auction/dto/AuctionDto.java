@@ -24,9 +24,9 @@ public class AuctionDto {
         public static BidResponse from(Bid bid) {
             return BidResponse.builder()
                 .id(bid.getId())
-                .bidder(new Bidder(bid.getBidder().getId(), bid.getBidder().getNickname()))
-                .amount(bid.getAmount().longValue())
-                .createdAt(bid.getCreatedAt().format(FMT))
+                .bidder(new Bidder(bid.getBidder().getId(), bid.getBidder().getNickname(), bid.getBidder().getProfileImage()))
+                .amount(bid.getAmount() != null ? bid.getAmount().longValue() : 0L)
+                .createdAt(bid.getCreatedAt() != null ? bid.getCreatedAt().format(FMT) : null)
                 .build();
         }
 
@@ -35,6 +35,7 @@ public class AuctionDto {
         public static class Bidder {
             private Long   id;
             private String nickname;
+            private String profileImage;
         }
     }
 
@@ -44,6 +45,7 @@ public class AuctionDto {
         private Long productId;
         private long currentBid;
         private int bidCount;
+        private int participantCount;
         private String lastBidderNickname;
         private long remainingMs;
         private String status;

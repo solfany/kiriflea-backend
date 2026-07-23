@@ -35,6 +35,7 @@ public class ProductResponse {
     private final Long         currentBid;
     private final String       auctionEndAt;
     private final Integer      bidCount;
+    private final Integer      participantCount;
     private final String       buyerNickname;
     private final Long         buyerId;
     private final String       auctionStatus;
@@ -75,16 +76,18 @@ public class ProductResponse {
                 listingCount
         );
         if (auction != null) {
-            this.currentBid   = auction.getCurrentPrice().longValue();
-            this.auctionEndAt = auction.getEndAt().format(FMT);
+            this.currentBid   = auction.getCurrentPrice() != null ? auction.getCurrentPrice().longValue() : (auction.getStartPrice() != null ? auction.getStartPrice().longValue() : 0L);
+            this.auctionEndAt = auction.getEndAt() != null ? auction.getEndAt().format(FMT) : null;
             this.bidCount     = auction.getBidCount();
+            this.participantCount = auction.getParticipantCount();
             this.buyerNickname = auction.getWinner() != null ? auction.getWinner().getNickname() : null;
             this.buyerId       = auction.getWinner() != null ? auction.getWinner().getId() : null;
-            this.auctionStatus = auction.getStatus().name();
+            this.auctionStatus = auction.getStatus() != null ? auction.getStatus().name() : null;
         } else {
             this.currentBid   = null;
             this.auctionEndAt = null;
             this.bidCount     = null;
+            this.participantCount = null;
             this.buyerNickname = null;
             this.buyerId       = null;
             this.auctionStatus = null;

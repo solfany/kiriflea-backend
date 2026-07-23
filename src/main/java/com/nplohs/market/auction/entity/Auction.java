@@ -52,6 +52,9 @@ public class Auction {
     @Comment("입찰 횟수")
     private int bidCount = 0;
 
+    @org.hibernate.annotations.Formula("(SELECT COUNT(DISTINCT b.bidder_id) FROM bids b WHERE b.auction_id = id)")
+    private int participantCount = 0;
+
     // 동시에 여러 입찰이 들어올 때 낙관적 락으로 lost-update를 막는다.
     // (예: 두 입찰이 동시에 currentPrice=1000을 읽고 각각 1200/1100으로 갱신하면,
     //  버전 체크 없이는 나중에 커밋되는 쪽이 이겨서 실제 최고가보다 낮은 값으로 덮어써질 수 있다)
