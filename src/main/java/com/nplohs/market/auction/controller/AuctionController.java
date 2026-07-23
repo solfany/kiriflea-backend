@@ -138,14 +138,13 @@ public class AuctionController {
         auctionService.extendTime(productId, userDetails.getUsername(), newEndAt);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
-
-    // 최고 입찰 취소 (판매자)
-    @DeleteMapping("/api/products/{productId}/auctions/top-bid")
-    public ResponseEntity<ApiResponse<Void>> cancelTopBid(
+    // 내 입찰 철회 (구매자)
+    @DeleteMapping("/api/products/{productId}/auctions/my-bid")
+    public ResponseEntity<ApiResponse<Void>> withdrawMyBid(
         @PathVariable Long productId,
         @AuthenticationPrincipal UserDetails userDetails
     ) {
-        auctionService.cancelTopBid(productId, userDetails.getUsername());
+        auctionService.withdrawMyBid(productId, userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

@@ -10,6 +10,7 @@ import java.util.Optional;
 
 public interface BidRepository extends JpaRepository<Bid, Long> {
     List<Bid> findByAuction_IdOrderByCreatedAtDesc(Long auctionId);
+    List<Bid> findByAuction_IdAndBidder_Email(Long auctionId, String email);
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.data.jpa.repository.Query("DELETE FROM Bid b WHERE b.auction.id = :auctionId")
     void deleteAllByAuctionId(@org.springframework.data.repository.query.Param("auctionId") Long auctionId);
