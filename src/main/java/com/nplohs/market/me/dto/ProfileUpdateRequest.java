@@ -12,6 +12,5 @@ public record ProfileUpdateRequest(
         @Size(max = 20, message = "이름은 20자 이하여야 합니다.") String name,
         @Size(max = 15, message = "닉네임은 15자 이하여야 합니다.") String nickname,
         @Size(max = 255, message = "프로필 이미지 주소가 너무 깁니다.")
-        @Pattern(regexp = "^https?://.*", message = "프로필 이미지는 http(s) URL이어야 합니다.")
         String profileImage
 ) {}

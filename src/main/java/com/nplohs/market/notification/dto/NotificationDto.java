@@ -7,7 +7,6 @@ import lombok.Getter;
 import java.time.format.DateTimeFormatter;
 
 @Getter
-
 public class NotificationDto {
     private Long id;
     private String type;
@@ -16,6 +15,8 @@ public class NotificationDto {
     @JsonProperty("isRead")
     private boolean isRead;
     private String createdAt;
+    private String actorProfileImage;
+    private String actorNickname;
 
     public NotificationDto(Notification n) {
         this.id = n.getId();
@@ -23,6 +24,12 @@ public class NotificationDto {
         this.message = n.getMessage();
         this.linkUrl = n.getLinkUrl();
         this.isRead = n.isRead();
-        this.createdAt = n.getCreatedAt() != null ? n.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : null;
+        this.createdAt = n.getCreatedAt() != null
+                ? n.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                : null;
+        if (n.getActor() != null) {
+            this.actorProfileImage = n.getActor().getProfileImage();
+            this.actorNickname = n.getActor().getNickname();
+        }
     }
 }

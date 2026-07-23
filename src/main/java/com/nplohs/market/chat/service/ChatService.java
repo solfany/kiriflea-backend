@@ -108,19 +108,11 @@ public class ChatService {
     private Map<Long, Integer> computeUnreadCounts(List<ChatRoom> rooms, Long userId) {
         if (rooms.isEmpty()) return Map.of();
 
-        List<Long> roomIds = rooms.stream().map(ChatRoom::getId).toList();
-        Map<Long, LocalDateTime> leftAtByRoom = new HashMap<>();
+        Map<Long, Integer> counts = new HashMap<>();
         for (ChatRoom room : rooms) {
             LocalDateTime leftAt = room.getBuyer().getId().equals(userId) ? room.getBuyerLeftAt() : room.getSellerLeftAt();
-            leftAtByRoom.put(room.getId(), leftAt);
-        }
-
-        Map<Long, Integer> counts = new HashMap<>();
-        for (ChatMessageRepository.UnreadMessageView v : chatMessageRepository.findUnreadForRooms(roomIds, userId)) {
-            LocalDateTime leftAt = leftAtByRoom.get(v.getRoomId());
-            if (leftAt == null || v.getCreatedAt().isAfter(leftAt)) {
-                counts.merge(v.getRoomId(), 1, Integer::sum);
-            }
+            int unread = (int) chatMessageRepository.countUnreadSince(room.getId(), userId, leftAt);
+            counts.put(room.getId(), unread);
         }
         return counts;
     }
